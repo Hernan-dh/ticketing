@@ -1,0 +1,11 @@
+node_modules/
+dist/
+data/
+.env
+*.log
+.gradle/
+build/
+test-results/
+playwright-report/
+__pycache__/
+*.py[cod]

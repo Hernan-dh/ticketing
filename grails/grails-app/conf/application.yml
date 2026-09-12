@@ -1,0 +1,14 @@
+grails:
+  profile: rest-api
+  codegen:
+    defaultPackage: crowder
+spring:
+  application:
+    name: crowder-catalog
+  datasource:
+    url: ${JDBC_URL:jdbc:mysql://localhost:3306/crowder}
+    username: ${DB_USER:crowder}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+server:
+  port: 8080

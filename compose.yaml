@@ -1,0 +1,50 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: crowder
+      MYSQL_USER: crowder
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Definir DB_PASSWORD en .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Definir MYSQL_ROOT_PASSWORD en .env}
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./infra/init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
+    healthcheck:
+      test: [CMD-SHELL, 'mysqladmin ping -h localhost -u root -p"$$MYSQL_ROOT_PASSWORD" --silent']
+      interval: 5s
+      retries: 20
+  redis:
+    image: redis:7.4-alpine
+    command: [redis-server, --appendonly, 'yes']
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      retries: 10
+  catalog:
+    build: ./grails
+    environment:
+      JDBC_URL: jdbc:mysql://mysql:3306/crowder?useUnicode=true&characterEncoding=UTF-8
+      DB_USER: crowder
+      DB_PASSWORD: ${DB_PASSWORD}
+      SERVICE_KEY: ${SERVICE_KEY:?Definir SERVICE_KEY en .env}
+    depends_on:
+      mysql: {condition: service_healthy}
+  app:
+    build: .
+    ports: ['127.0.0.1:3001:3001']
+    environment:
+      HOST: 0.0.0.0
+      MYSQL_URL: mysql://crowder:${DB_PASSWORD}@mysql:3306/crowder
+      REDIS_URL: redis://redis:6379
+      GRAILS_URL: http://catalog:8080
+      SERVICE_KEY: ${SERVICE_KEY}
+      ADMIN_KEY: ${ADMIN_KEY:?Definir ADMIN_KEY en .env}
+      ALLOW_DEMO_PAYMENTS: ${ALLOW_DEMO_PAYMENTS:-false}
+    depends_on:
+      mysql: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      catalog: {condition: service_started}
+volumes:
+  mysql-data:
+  redis-data:

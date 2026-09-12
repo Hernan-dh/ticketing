@@ -1,0 +1,41 @@
+import { randomBytes, randomUUID } from 'node:crypto';
+export const channels = ['Web', 'Boletería', 'Móvil', 'Distribuidor'];
+export const media = ['Digital', 'Papel', 'RFID'];
+export const seatsFor = e => Array.from({length:e.rows * e.columns}, (_, i) => `${String.fromCharCode(65+Math.floor(i/e.columns))}${i%e.columns+1}`);
+export const seed = () => ({ brand: { name: 'Crowder', color: '#d7fa76' }, events: [
+ {id:'e1',name:'Horizonte Festival',category:'Música',venue:'Estadio Obras · Buenos Aires',date:'2026-11-21T21:00',price:45000,rows:8,columns:12,medium:'Digital',accent:'lime'},
+ {id:'e2',name:'Una noche de jazz',category:'Música',venue:'Teatro Vorterix · Buenos Aires',date:'2026-10-16T20:30',price:28000,rows:6,columns:10,medium:'Papel',accent:'peach'},
+ {id:'e3',name:'Ideas que conectan',category:'Conferencia',venue:'Centro de Convenciones · Córdoba',date:'2026-12-04T09:00',price:18000,rows:8,columns:10,medium:'RFID',accent:'lavender'}
+ ], holds:[], orders:[], tickets:[], integrations:[] });
+export function fail(message, status=400) { throw Object.assign(new Error(message), {status}); }
+export function eventInput(b) {
+ const name=String(b.name||'').trim(), venue=String(b.venue||'').trim();
+ if(!name || name.length>120 || !venue || venue.length>200 || !Number.isFinite(Date.parse(b.date))) fail('Completá nombre, lugar y fecha válida.');
+ if(!Number.isSafeInteger(b.price)||b.price<0||b.price>10000000) fail('Precio inválido.');
+ if(!Number.isInteger(b.rows)||b.rows<1||b.rows>20||!Number.isInteger(b.columns)||b.columns<1||b.columns>20) fail('El plano admite entre 1 y 20 filas y columnas.');
+ if(!media.includes(b.medium)) fail('Medio de acceso inválido.');
+ return {id:randomUUID(),name,venue,date:b.date,price:b.price,rows:b.rows,columns:b.columns,medium:b.medium,category:'Evento',accent:'lime'};
+}
+export function reserve(s, b, now=Date.now()) {
+ const e=s.events.find(e=>e.id===b.eventId); if(!e) fail('Evento inexistente.',404);
+ if(!channels.includes(b.channel)) fail('Canal inválido.');
+ if(!Array.isArray(b.seats)||!b.seats.length||b.seats.length>8||new Set(b.seats).size!==b.seats.length||b.seats.some(x=>!seatsFor(e).includes(x))) fail('Seleccioná entre 1 y 8 asientos válidos.');
+ s.holds=s.holds.filter(h=>h.expiresAt>now);
+ const occupied=new Set([...s.holds.filter(h=>h.eventId===e.id).flatMap(h=>h.seats),...s.tickets.filter(t=>t.eventId===e.id).map(t=>t.seat)]);
+ if(b.seats.some(x=>occupied.has(x))) fail('Otro comprador tomó un asiento. Actualizá la selección.',409);
+ const hold={id:randomUUID(),eventId:e.id,seats:b.seats,channel:b.channel,expiresAt:now+300000,total:b.seats.length*e.price}; s.holds.push(hold); return hold;
+}
+export function checkout(s,b,now=Date.now()) {
+ const existing=s.orders.find(o=>o.holdId===b.holdId); if(existing) return {...existing,tickets:s.tickets.filter(t=>t.orderId===existing.id)};
+ const h=s.holds.find(h=>h.id===b.holdId); if(!h||h.expiresAt<=now) fail('La reserva venció. Volvé a elegir asientos.',409);
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.email||'') || b.email.length>254) fail('Ingresá un correo válido.');
+ const e=s.events.find(e=>e.id===h.eventId);
+ const order={id:randomUUID(),holdId:h.id,eventId:h.eventId,total:h.total,channel:h.channel,email:b.email,createdAt:new Date(now).toISOString(),payment:'DEMO'};
+ const tickets=h.seats.map(seat=>({id:randomUUID(),token:randomBytes(32).toString('base64url'),seat,eventId:e.id,orderId:order.id,medium:e.medium,usedAt:null}));
+ s.orders.push(order); s.tickets.push(...tickets); s.holds=s.holds.filter(x=>x.id!==h.id); return {...order,tickets};
+}
+export function scan(s,b,now=Date.now()) {
+ const ticket=s.tickets.find(t=>t.token===b.token&&t.eventId===b.eventId); if(!ticket) fail('Entrada inválida para este evento.',404);
+ if(ticket.usedAt) fail('Esta entrada ya fue utilizada.',409);
+ ticket.usedAt=new Date(now).toISOString(); return {seat:ticket.seat,medium:ticket.medium,usedAt:ticket.usedAt};
+}
