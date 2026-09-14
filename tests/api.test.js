@@ -6,7 +6,7 @@ import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {once} from 'node:events';
 test('API: autorización, concurrencia, emisión, ingreso único y persistencia',async()=>{
- const cwd=await mkdtemp(join(tmpdir(),'crowder-test-'));
+ const cwd=await mkdtemp(join(tmpdir(),'ticketing-test-'));
  let child;let log='';
  async function start(){child=spawn(process.execPath,[resolve('server/index.js')],{cwd,env:{...process.env,PORT:'3197',HOST:'127.0.0.1',ADMIN_KEY:'test-operator',ALLOW_DEMO_PAYMENTS:'true',MYSQL_URL:'',REDIS_URL:'',GRAILS_URL:''},stdio:['ignore','pipe','pipe']});child.stdout.on('data',d=>log+=d);child.stderr.on('data',d=>log+=d);for(let i=0;i<100;i++){if(child.exitCode!==null)throw Error(log);try{const r=await fetch('http://127.0.0.1:3197/api/health');if(r.ok)return;}catch{}await new Promise(r=>setTimeout(r,50));}throw Error('Servidor no inició: '+log);}
  async function stop(){if(child&&child.exitCode===null){const done=once(child,'exit');child.kill();await done;}}

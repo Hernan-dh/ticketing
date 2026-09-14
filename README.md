@@ -1,4 +1,4 @@
-# Crowder Ticketing
+# Ticketing
 
 MVP de ticketing con interfaz en español, identidad configurable, catálogo de eventos, plano de asientos, reservas de cinco minutos, emisión de QR y validación online de uso único. Incluye dos modos: demo local ejecutable con Node.js y configuración del stack completo con Grails, MySQL y Redis.
 

@@ -1,4 +1,4 @@
-package crowder
+package ticketing
 import java.security.MessageDigest
 class ServiceAuthInterceptor {
     ServiceAuthInterceptor() { matchAll() }

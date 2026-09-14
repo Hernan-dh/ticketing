@@ -2,7 +2,7 @@ plugins {
     id 'groovy'
     id 'org.apache.grails.gradle.grails-web' version '7.0.2'
 }
-group = 'crowder'
+group = 'ticketing'
 version = '0.1.0'
 repositories { mavenCentral(); maven { url = 'https://repo.grails.org/grails/core' } }
 dependencies {

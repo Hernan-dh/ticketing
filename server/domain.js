@@ -2,7 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 export const channels = ['Web', 'Boletería', 'Móvil', 'Distribuidor'];
 export const media = ['Digital', 'Papel', 'RFID'];
 export const seatsFor = e => Array.from({length:e.rows * e.columns}, (_, i) => `${String.fromCharCode(65+Math.floor(i/e.columns))}${i%e.columns+1}`);
-export const seed = () => ({ brand: { name: 'Crowder', color: '#d7fa76' }, events: [
+export const seed = () => ({ brand: { name: 'Ticketing', color: '#d7fa76' }, events: [
  {id:'e1',name:'Horizonte Festival',category:'Música',venue:'Estadio Obras · Buenos Aires',date:'2026-11-21T21:00',price:45000,rows:8,columns:12,medium:'Digital',accent:'lime'},
  {id:'e2',name:'Una noche de jazz',category:'Música',venue:'Teatro Vorterix · Buenos Aires',date:'2026-10-16T20:30',price:28000,rows:6,columns:10,medium:'Papel',accent:'peach'},
  {id:'e3',name:'Ideas que conectan',category:'Conferencia',venue:'Centro de Convenciones · Córdoba',date:'2026-12-04T09:00',price:18000,rows:8,columns:10,medium:'RFID',accent:'lavender'}

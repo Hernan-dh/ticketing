@@ -2,8 +2,8 @@ services:
   mysql:
     image: mysql:8.4
     environment:
-      MYSQL_DATABASE: crowder
-      MYSQL_USER: crowder
+      MYSQL_DATABASE: ticketing
+      MYSQL_USER: ticketing
       MYSQL_PASSWORD: ${DB_PASSWORD:?Definir DB_PASSWORD en .env}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Definir MYSQL_ROOT_PASSWORD en .env}
     volumes:
@@ -24,8 +24,8 @@ services:
   catalog:
     build: ./grails
     environment:
-      JDBC_URL: jdbc:mysql://mysql:3306/crowder?useUnicode=true&characterEncoding=UTF-8
-      DB_USER: crowder
+      JDBC_URL: jdbc:mysql://mysql:3306/ticketing?useUnicode=true&characterEncoding=UTF-8
+      DB_USER: ticketing
       DB_PASSWORD: ${DB_PASSWORD}
       SERVICE_KEY: ${SERVICE_KEY:?Definir SERVICE_KEY en .env}
     depends_on:
@@ -35,7 +35,7 @@ services:
     ports: ['127.0.0.1:3001:3001']
     environment:
       HOST: 0.0.0.0
-      MYSQL_URL: mysql://crowder:${DB_PASSWORD}@mysql:3306/crowder
+      MYSQL_URL: mysql://ticketing:${DB_PASSWORD}@mysql:3306/ticketing
       REDIS_URL: redis://redis:6379
       GRAILS_URL: http://catalog:8080
       SERVICE_KEY: ${SERVICE_KEY}

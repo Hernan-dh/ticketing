@@ -1,13 +1,13 @@
 grails:
   profile: rest-api
   codegen:
-    defaultPackage: crowder
+    defaultPackage: ticketing
 spring:
   application:
-    name: crowder-catalog
+    name: ticketing-catalog
   datasource:
-    url: ${JDBC_URL:jdbc:mysql://localhost:3306/crowder}
-    username: ${DB_USER:crowder}
+    url: ${JDBC_URL:jdbc:mysql://localhost:3306/ticketing}
+    username: ${DB_USER:ticketing}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 server:

@@ -1,4 +1,4 @@
-package crowder
+package ticketing
 import groovy.json.JsonOutput
 class EventController {
     CatalogService catalogService

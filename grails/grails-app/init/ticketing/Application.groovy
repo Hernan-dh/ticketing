@@ -1,4 +1,4 @@
-package crowder
+package ticketing
 import grails.boot.GrailsApp
 import grails.boot.config.GrailsAutoConfiguration
 class Application extends GrailsAutoConfiguration {

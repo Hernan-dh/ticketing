@@ -1,4 +1,4 @@
 pluginManagement {
     repositories { mavenCentral(); gradlePluginPortal(); maven { url = 'https://repo.grails.org/grails/core' } }
 }
-rootProject.name = 'crowder-catalog'
+rootProject.name = 'ticketing-catalog'

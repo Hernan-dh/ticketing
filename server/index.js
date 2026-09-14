@@ -26,5 +26,5 @@ app.put('/api/integrations',admin,async(q,r)=>{const {provider,type}=q.body;if(!
 app.use(express.static(resolve('dist')));
 app.get('/{*path}',(_q,r)=>r.sendFile(resolve('dist/index.html')));
 app.use((e,_q,r,_n)=>{if(!e.status||e.status>=500)console.error(e);r.status(e.status||500).json({error:e.status&&e.status<500?e.message:'Servicio no disponible. Intentá nuevamente.'});});
-const server=app.listen(Number(process.env.PORT||3001),process.env.HOST||'127.0.0.1',()=>console.log('Crowder API http://localhost:3001'));
+const server=app.listen(Number(process.env.PORT||3001),process.env.HOST||'127.0.0.1',()=>console.log('Ticketing API http://localhost:3001'));
 for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>server.close(async()=>{await store.close();if(redis)await redis.quit();process.exit(0);}));
