@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-test('catálogo, plano Pixi, compra, QR y acceso único',async({page})=>{
+test('catalog, Pixi map, checkout, QR, and single admission',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('/');await expect(page.getByRole('heading',{name:'Tus eventos, sin límites.'})).toBeVisible();
  await page.screenshot({path:'test-results/catalog-desktop.png',fullPage:true});
