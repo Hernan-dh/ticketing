@@ -15,6 +15,8 @@ npm.cmd run dev
 
 Abrir http://localhost:5173. El servidor muestra una **clave de operador temporal** en la terminal. Ingresarla en Ventas, Control de acceso, Mi marca o Integraciones y pulsar “Ingresar / actualizar”. Para definir una clave persistente, establecer `ADMIN_KEY` antes de arrancar. La clave se guarda en sessionStorage de la pestaña; no incluirla en código ni compartirla con compradores.
 
+La interfaz está disponible en español e inglés. El botón `ES`/`EN` del encabezado cambia el idioma, adapta fechas y moneda, y guarda la preferencia en el navegador.
+
 La demo persiste en `data/state.json`. Ejecutar una sola instancia en este modo. Grails, MySQL y Redis no intervienen en la demo local. `.env` se usa por Docker Compose; para npm se emplean variables del proceso como en el ejemplo.
 
 ### Recorrido
