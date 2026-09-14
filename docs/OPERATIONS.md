@@ -11,7 +11,7 @@ npm run hooks:install
 
 On Windows, `npm run verify` requires the Python launcher (`py -3`). The Git hook uses `scripts/verify.sh`, which also looks for a project virtual environment, `python3`, `python`, and then `py -3`.
 
-`npm run verify` invokes Python 3 and runs whitespace checks, checks required documentation, scans for likely private files and secrets, runs Node tests and builds the browser bundle. The pre-commit hook runs the same verifier once enabled. GitHub Actions runs it for pushes and pull requests.
+`npm run verify` invokes Python 3 and runs whitespace checks, checks required documentation, scans for likely private files and secrets, runs Node tests and builds the browser bundle. The pre-commit hook runs the same verifier once enabled. GitHub Actions invokes `python scripts/verify.py` directly because the Windows `py` launcher is not available on its Linux runner.
 
 ## Commit publication
 
