@@ -9,6 +9,8 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
       - ./infra/init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
+      - ./infra/migrations/002_privacy_core.sql:/docker-entrypoint-initdb.d/002-privacy-core.sql:ro
+      - ./infra/migrations/003_activate_relational_store.sql:/docker-entrypoint-initdb.d/003-relational-store.sql:ro
     healthcheck:
       test: [CMD-SHELL, 'mysqladmin ping -h localhost -u root -p"$$MYSQL_ROOT_PASSWORD" --silent']
       interval: 5s
@@ -40,6 +42,8 @@ services:
       GRAILS_URL: http://catalog:8080
       SERVICE_KEY: ${SERVICE_KEY}
       ADMIN_KEY: ${ADMIN_KEY:?Definir ADMIN_KEY en .env}
+      CONTACT_ENCRYPTION_KEY: ${CONTACT_ENCRYPTION_KEY:?Definir CONTACT_ENCRYPTION_KEY en .env}
+      TICKET_TOKEN_KEY: ${TICKET_TOKEN_KEY:?Definir TICKET_TOKEN_KEY en .env}
       ALLOW_DEMO_PAYMENTS: ${ALLOW_DEMO_PAYMENTS:-false}
     depends_on:
       mysql: {condition: service_healthy}

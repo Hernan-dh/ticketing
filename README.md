@@ -34,7 +34,7 @@ Requires Docker with Compose. Grails builds with JDK 17 and Gradle 8.14.3.
 
 ```powershell
 Copy-Item .env.example .env
-# Replace all four placeholders with distinct random values.
+# Replace every placeholder with a distinct random value.
 docker compose up --build
 ```
 
@@ -50,7 +50,7 @@ Open http://localhost:3001. The catalog can remain unavailable until Grails fini
 | MySQL 8.4 | Transactional inventory, sales, ticket, and catalog persistence |
 | Redis 7.4 | Per-IP request limiting |
 
-Grails owns `catalog_events`; Node synchronizes it when queried. Events cannot be edited or deleted in this MVP. Holds, orders, tickets, and branding live in a JSON `ticketing_state` row. `SELECT ... FOR UPDATE` serializes operations across Node instances. This simple design should be normalized per event before commercial load.
+Grails owns `catalog_events`; Node synchronizes it when queried. Events cannot be edited or deleted in this MVP. Orders, payment references and tickets use normalized MySQL tables; ticket contact addresses are encrypted and the sales view uses customer pseudonyms. QR tokens are never stored directly. Short-lived holds, branding and integration settings remain in the JSON `ticketing_state` row, with `SELECT ... FOR UPDATE` serializing reservations across Node instances.
 
 ## Scope and limitations
 
@@ -70,7 +70,7 @@ The API exposes `GET /api/payment-methods` with `demo_card` and `demo_transfer`.
 | Integrations | Provider intent is stored; adapters and execution remain pending |
 | Users | Shared demo key; roles, sessions, auditing, and tenant isolation remain pending |
 
-This is not production-ready. Before production, complete integrations, normalize storage, protect public holds, and configure TLS, secrets, backups, observability, and load tests. A QR is a bearer credential: the first presentation wins. Never store card numbers.
+This is not production-ready. Before production, complete integrations, move short-lived holds to a dedicated store, protect public holds, and configure TLS, secret rotation, backups, observability, and load tests. A QR is a bearer credential: the first presentation wins. Never store card numbers.
 
 ## API
 

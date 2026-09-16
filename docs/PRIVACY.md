@@ -16,8 +16,8 @@ Do not collect identity documents, birth dates, postal addresses, card numbers, 
 ## Privacy by default
 
 - Use synthetic `example.test` data outside production; never copy production data into development, demos or screenshots.
-- Encrypt contact values before persistence with `PII_ENCRYPTION_KEY`; keep the key out of source control, logs and backups where practical.
-- Use randomly generated UUIDs and opaque ticket tokens. Do not expose database sequence IDs.
+- Encrypt contact values before persistence with `CONTACT_ENCRYPTION_KEY`; keep the key out of source control and logs, and retain a protected recovery copy.
+- Use randomly generated UUIDs and HMAC-derived opaque ticket tokens. Persist only ticket-token hashes and do not expose database sequence IDs.
 - Keep payment data tokenised at the payment provider. The application stores no card data.
 - Give service accounts only their required database and network access; separate sales, access-control and administration roles.
 - Log action metadata only. Never log contact values, authentication secrets, QR tokens or provider credentials.

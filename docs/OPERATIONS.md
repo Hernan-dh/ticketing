@@ -52,3 +52,11 @@ sudo docker compose exec -T mysql sh -c 'exec mysql -uticketing -p"$MYSQL_PASSWO
 ```
 
 Do not enable contact collection until application-level encryption and role-based access are deployed. The schema deliberately contains provider references only; it has no fields for card data or identity documents.
+
+Before activating the relational application version on an existing deployment, apply the idempotency migration after `002_privacy_core.sql`:
+
+```bash
+sudo docker compose exec -T mysql sh -c 'exec mysql -uticketing -p"$MYSQL_PASSWORD" ticketing' < infra/migrations/003_activate_relational_store.sql
+```
+
+Set independent random values of at least 32 characters for `CONTACT_ENCRYPTION_KEY` and `TICKET_TOKEN_KEY`, then recreate the application container. Keep both values stable and backed up: changing the contact key prevents contact recovery, while changing the ticket key prevents regenerated QR tokens from matching previously issued tickets. Fresh Compose volumes apply migrations `002` and `003` automatically.
