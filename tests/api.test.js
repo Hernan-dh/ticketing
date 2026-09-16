@@ -11,11 +11,12 @@ test('API: authorization, concurrency, issuance, single admission, and persisten
  async function start(){child=spawn(process.execPath,[resolve('server/index.js')],{cwd,env:{...process.env,PORT:'3197',HOST:'127.0.0.1',ADMIN_KEY:'test-operator',ALLOW_DEMO_PAYMENTS:'true',MYSQL_URL:'',REDIS_URL:'',GRAILS_URL:''},stdio:['ignore','pipe','pipe']});child.stdout.on('data',d=>log+=d);child.stderr.on('data',d=>log+=d);for(let i=0;i<100;i++){if(child.exitCode!==null)throw Error(log);try{const r=await fetch('http://127.0.0.1:3197/api/health');if(r.ok)return;}catch{}await new Promise(r=>setTimeout(r,50));}throw Error('Server did not start: '+log);}
  async function stop(){if(child&&child.exitCode===null){const done=once(child,'exit');child.kill();await done;}}
  async function request(path,method='GET',body,admin=false){const r=await fetch(`http://127.0.0.1:3197/api${path}`,{method,headers:{'Content-Type':'application/json',...(admin?{'x-admin-key':'test-operator'}:{})},body:body?JSON.stringify(body):undefined});return {status:r.status,data:await r.json()};}
- try{await start();assert.equal((await request('/admin')).status,401);assert.equal((await request('/scan','POST',{token:'fake',eventId:'e1'})).status,401);
+ try{await start();assert.equal((await request('/admin')).status,401);assert.equal((await request('/scan','POST',{token:'fake',eventId:'e1'})).status,401);assert.deepEqual((await request('/payment-methods')).data.methods.map(method=>method.id),['demo_card','demo_transfer']);
  const competitors=await Promise.all([1,2].map(()=>request('/holds','POST',{eventId:'e1',seats:['A1'],channel:'Web'})));assert.deepEqual(competitors.map(r=>r.status).sort(),[201,409]);const hold=competitors.find(r=>r.status===201).data;
  assert.equal((await request('/holds','POST',{eventId:'e1',seats:['A2'],channel:'Boletería'})).status,401);
  assert.equal((await request('/checkout','POST',{holdId:hold.id,email:'bad'})).status,400);
  const order=(await request('/checkout','POST',{holdId:hold.id,email:'test@example.com'})).data;
+ assert.equal(order.paymentIntent.status,'demo_paid');assert.equal(order.paymentIntent.provider,'demo');
  const retry=(await request('/checkout','POST',{holdId:hold.id,email:'test@example.com'})).data;assert.equal(order.id,retry.id);assert.equal(order.total,45000);
  const entry={eventId:'e1',token:order.tickets[0].token};const scans=await Promise.all([1,2].map(()=>request('/scan','POST',entry,true)));assert.deepEqual(scans.map(r=>r.status).sort(),[200,409]);
  await stop();await start();assert.equal((await request('/scan','POST',entry,true)).status,409);assert.deepEqual((await request('/events/e1/seats')).data.sold,['A1']);

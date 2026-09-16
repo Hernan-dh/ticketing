@@ -54,6 +54,10 @@ Grails owns `catalog_events`; Node synchronizes it when queried. Events cannot b
 
 ## Scope and limitations
 
+### Demo payments
+
+The API exposes `GET /api/payment-methods` with `demo_card` and `demo_transfer`. A checkout may send `paymentMethod`; when omitted it uses `demo_card` for backwards compatibility. Every issued order receives a `demo_paid` payment intent with an opaque reference. This application never accepts card numbers, CVV, CBU, bank credentials or payment proofs.
+
 | Capability | Status |
 |---|---|
 | Four sales channels | Shared inventory; non-web channels require an operator key |

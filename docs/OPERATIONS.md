@@ -30,3 +30,25 @@ When no title and description are passed, `publish` uses `GEMINI_API_KEY` and op
 ## Runtime
 
 See [README](../README.md) for running the demo and Compose stack. Use `.env.example` as the non-secret reference for Compose configuration. Grails needs Java 17; Compose needs Docker. Before a deployment, run `npm run verify`, build the Compose stack, configure distinct production secrets and keep MySQL/Redis private to the application network.
+
+### Replacing the deployed data with demonstration data
+
+`scripts/seed-demo.mjs` replaces the complete event catalog and transactional state with fictional demonstration data: events, orders, tickets, checked-in tickets and simulated provider settings. It is intentionally guarded because it deletes the current catalog and state. It must only be used on a demonstration deployment, after a verified backup.
+
+```bash
+cd /srv/projects/ticketing
+sudo docker compose exec -T -e CONFIRM_DEMO_RESET=ticketing-demo app node scripts/seed-demo.mjs --reset
+```
+
+The dataset uses `example.test` addresses and simulated payment labels only. It stores no cards, payment credentials or real customer data.
+
+### Privacy-core schema migration
+
+The relational privacy schema is in `infra/migrations/002_privacy_core.sql`. Take and verify a backup before applying it. The migration is additive and creates no personal data by itself:
+
+```bash
+cd /srv/projects/ticketing
+sudo docker compose exec -T mysql sh -c 'exec mysql -uticketing -p"$MYSQL_PASSWORD" ticketing' < infra/migrations/002_privacy_core.sql
+```
+
+Do not enable contact collection until application-level encryption and role-based access are deployed. The schema deliberately contains provider references only; it has no fields for card data or identity documents.

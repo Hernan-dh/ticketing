@@ -12,6 +12,7 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY package.json ./
 COPY server ./server
+COPY scripts/seed-demo.mjs ./scripts/seed-demo.mjs
 USER node
 EXPOSE 3001
 CMD ["node", "server/index.js"]
