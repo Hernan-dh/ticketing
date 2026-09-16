@@ -131,6 +131,7 @@ function App() {
     [token, setToken] = useState(""),
     [scanEvent, setScanEvent] = useState(""),
     [scanResult, setScanResult] = useState(null),
+    [scanError, setScanError] = useState(""),
     [now, setNow] = useState(Date.now());
   useEffect(() => {
     localStorage.setItem("language", lang);
@@ -162,9 +163,13 @@ function App() {
   };
   useEffect(() => {
     run(refresh);
+    const retry = setInterval(() => refresh().catch(() => {}), 15000);
     const changed = () => setSeats([...selection.get("seats")]);
     selection.on("change:seats", changed);
-    return () => selection.off("change:seats", changed);
+    return () => {
+      clearInterval(retry);
+      selection.off("change:seats", changed);
+    };
   }, []);
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -219,6 +224,8 @@ function App() {
   const seconds = hold
     ? Math.max(0, Math.ceil((hold.expiresAt - now) / 1000))
     : 0;
+  const checkoutSeats = hold ? hold.seats : seats;
+  const checkoutTotal = hold ? hold.total : seats.length * event.price;
   return (
     <div className="shell" style={{ "--accent": brand.color }}>
       <aside>
@@ -581,11 +588,12 @@ function App() {
                       </label>
                     )}
                     <p>
-                      Asientos <b>{seats.join(", ") || "Sin seleccionar"}</b>
+                      Asientos{" "}
+                      <b>{checkoutSeats.join(", ") || "Sin seleccionar"}</b>
                     </p>
                     <div className="total">
                       <span>Total</span>
-                      <strong>{money(seats.length * event.price)}</strong>
+                      <strong>{money(checkoutTotal)}</strong>
                     </div>
                     {!hold ? (
                       <button
@@ -832,15 +840,18 @@ function App() {
                   onSubmit={(e) => {
                     e.preventDefault();
                     setScanResult(null);
-                    run(async () => {
-                      setScanResult(
-                        await api("/scan", "POST", {
-                          eventId: scanEvent,
-                          token: token.trim(),
-                        }),
-                      );
-                      setToken("");
-                    });
+                    setScanError("");
+                    setBusy(true);
+                    api("/scan", "POST", {
+                      eventId: scanEvent,
+                      token: token.trim(),
+                    })
+                      .then((result) => {
+                        setScanResult(result);
+                        setToken("");
+                      })
+                      .catch((error) => setScanError(error.message))
+                      .finally(() => setBusy(false));
                   }}
                 >
                   <h2>Validación online</h2>
@@ -878,6 +889,11 @@ function App() {
                   {scanResult && (
                     <div className="accepted" role="status">
                       ✓ Acceso permitido · Asiento {scanResult.seat}
+                    </div>
+                  )}
+                  {scanError && (
+                    <div className="alert" role="alert">
+                      Acceso rechazado: {scanError}
                     </div>
                   )}
                   <small>
