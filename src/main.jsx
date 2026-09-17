@@ -225,7 +225,11 @@ function App() {
     ? Math.max(0, Math.ceil((hold.expiresAt - now) / 1000))
     : 0;
   const checkoutSeats = hold ? hold.seats : seats;
-  const checkoutTotal = hold ? hold.total : seats.length * event.price;
+  const checkoutTotal = hold
+    ? hold.total
+    : event
+      ? seats.length * event.price
+      : 0;
   return (
     <div className="shell" style={{ "--accent": brand.color }}>
       <aside>
