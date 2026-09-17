@@ -3,5 +3,3 @@ services:
     # MySQL reports healthy during its one-time initialization server. Retry the
     # stateless app until the final MySQL server is accepting connections.
     restart: on-failure
-    ports:
-      - '127.0.0.1:${TEST_PORT:-3311}:3001'
