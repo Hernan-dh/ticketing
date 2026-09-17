@@ -5,7 +5,7 @@ test('catalog, Pixi map, checkout, QR, and single admission',async({page})=>{
  await page.screenshot({path:'test-results/catalog-desktop.png',fullPage:true});
  await page.getByRole('button',{name:'Ver Horizonte Festival'}).click();await expect(page.locator('canvas')).toBeVisible();
  await page.getByText('Selección accesible de asientos').click();await page.locator('.seat-buttons button:not([disabled])').first().click();
- await page.getByRole('button',{name:'Reservar por 5 minutos'}).click();await page.getByLabel('Correo del comprador').fill('browser@example.com');
+ await expect(page.locator('.checkout')).toContainText('45.000');await page.getByRole('button',{name:'Reservar por 5 minutos'}).click();await expect(page.locator('.checkout')).toContainText('A1');await expect(page.locator('.checkout')).toContainText('45.000');await page.getByLabel('Correo del comprador').fill('browser@example.com');
  await page.getByRole('button',{name:'Simular pago y emitir'}).click();await expect(page.getByRole('heading',{name:'¡Ya tenés tus entradas!'})).toBeVisible();
  await expect(page.getByRole('img',{name:/QR de entrada/})).toBeVisible();const token=await page.locator('.ticket code').textContent();
  await page.getByRole('button',{name:'Control de acceso',exact:false}).click();await page.getByLabel('Clave de operador').fill('browser-test-key');await page.getByRole('button',{name:'Ingresar / actualizar'}).click();await expect(page.getByText('Sesión verificada')).toBeVisible();

@@ -26,8 +26,15 @@ export function localize(root, lang) {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   let node;
   while ((node = walker.nextNode())) {
-    if (!originals.has(node)) originals.set(node, node.nodeValue);
-    node.nodeValue = translateValue(originals.get(node), lang);
+    let value = originals.get(node);
+    if (!value) {
+      value = { source: node.nodeValue, rendered: node.nodeValue };
+      originals.set(node, value);
+    } else if (node.nodeValue !== value.rendered) {
+      value.source = node.nodeValue;
+    }
+    value.rendered = translateValue(value.source, lang);
+    if (node.nodeValue !== value.rendered) node.nodeValue = value.rendered;
   }
   root.querySelectorAll('[placeholder],[aria-label]').forEach(el => {
     if (!originalAttributes.has(el)) originalAttributes.set(el, {});
