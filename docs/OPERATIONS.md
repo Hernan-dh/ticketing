@@ -42,6 +42,14 @@ sudo docker compose exec -T -e CONFIRM_DEMO_RESET=ticketing-demo app node script
 
 The dataset uses `example.test` addresses and simulated payment labels only. It stores no cards, payment credentials or real customer data.
 
+### Adding showcase data without deleting current sales
+
+`scripts/seed-showcase.mjs` idempotently adds six fictional events and fourteen normalized demo sales. It preserves existing data, encrypts distinct `example.test` contacts with the configured contact key, stores simulated payment references only, and can be rerun without duplicating orders or tickets:
+
+```bash
+sudo docker compose exec -T -e CONFIRM_DEMO_SEED=ticketing-demo app node scripts/seed-showcase.mjs --append
+```
+
 ### Privacy-core schema migration
 
 The relational privacy schema is in `infra/migrations/002_privacy_core.sql`. Take and verify a backup before applying it. The migration is additive and creates no personal data by itself:
