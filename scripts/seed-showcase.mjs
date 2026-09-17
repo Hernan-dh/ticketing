@@ -44,7 +44,8 @@ try {
     const number=String(index+1).padStart(3,'0'),email=`cliente-${number}@example.test`,event=byId.get(eventId);
     const customerId=stableId('showcase-customer',number),contactId=stableId('showcase-contact',number),methodId=stableId('showcase-method',number),orderId=stableId('showcase-order',number),paymentId=stableId('showcase-payment',number),holdId=stableId('showcase-hold',number),providerReference=`showcase_${number}`;
     const createdAt=new Date(Date.UTC(2026,8,index+1,15));
-    await connection.query('INSERT IGNORE INTO customers (id,pseudonym) VALUES (?,?)',[customerId,`Cliente demo ${number}`]);
+    const pseudonym=`Cliente ${createHmac('sha256',contactKey).update(email).digest('hex').slice(0,12)}`;
+    await connection.query('INSERT INTO customers (id,pseudonym) VALUES (?,?) ON DUPLICATE KEY UPDATE pseudonym=VALUES(pseudonym)',[customerId,pseudonym]);
     await connection.query("INSERT IGNORE INTO customer_contacts (id,customer_id,purpose,ciphertext) VALUES (?,?,'ticket_delivery',?)",[contactId,customerId,encrypt(email)]);
     await connection.query("INSERT IGNORE INTO payment_methods (id,customer_id,provider,provider_reference,method_type) VALUES (?,?,'demo',?,?)",[methodId,customerId,providerReference,methodType]);
     await connection.query("INSERT IGNORE INTO sales_orders (id,hold_id,customer_id,event_id,channel,total_amount,payment_status,created_at) VALUES (?,?,?,?,?,?,'demo_paid',?)",[orderId,holdId,customerId,eventId,channel,seats.length*event.price,createdAt]);

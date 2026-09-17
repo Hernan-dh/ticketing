@@ -12,6 +12,15 @@ const money = (n) =>
     currency: "ARS",
     maximumFractionDigits: 0,
   }).format(n);
+const paymentName = (type, lang) => {
+  const names = {
+    card: ["Tarjeta", "Card"],
+    bank_transfer: ["Transferencia", "Bank transfer"],
+    wallet: ["Billetera", "Wallet"],
+    cash: ["Efectivo", "Cash"],
+  };
+  return names[type]?.[lang === "en" ? 1 : 0] || type;
+};
 async function api(path, method = "GET", body) {
   const r = await fetch(`/api${path}`, {
     method,
@@ -820,7 +829,11 @@ function App() {
                                 <td>{o.email}</td>
                                 <td>{o.channel}</td>
                                 <td>{money(o.total)}</td>
-                                <td>{o.payment}</td>
+                                <td>
+                                  {o.paymentMethodType
+                                    ? `DEMO · ${paymentName(o.paymentMethodType, lang)}`
+                                    : o.payment}
+                                </td>
                               </tr>
                             ))}
                           </tbody>

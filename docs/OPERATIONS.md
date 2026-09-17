@@ -50,6 +50,8 @@ The dataset uses `example.test` addresses and simulated payment labels only. It 
 sudo docker compose exec -T -e CONFIRM_DEMO_SEED=ticketing-demo app node scripts/seed-showcase.mjs --append
 ```
 
+Existing deployments should apply `004_normalize_demo_pseudonyms.sql` once. It changes only legacy/showcase display aliases to the opaque `Cliente <12 hex>` format; it does not modify encrypted contacts, orders or payments.
+
 ### Privacy-core schema migration
 
 The relational privacy schema is in `infra/migrations/002_privacy_core.sql`. Take and verify a backup before applying it. The migration is additive and creates no personal data by itself:
