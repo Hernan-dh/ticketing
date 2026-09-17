@@ -1,33 +1,44 @@
 # Architecture
 
-## Components
+## System overview
 
 ```text
-Browser
-  | React + Backbone + PixiJS
-  v
-Node.js / Express -------------------- Redis
-  | reservations, orders, access       rate limiting
-  v
-MySQL <------------------------------ Grails catalog API
-  inventory state                       event catalog
+Browser --HTTPS--> Caddy --loopback--> Express
+                                      |  |  |
+                                      |  |  +--> Redis rate limiting
+                                      |  +-----> Grails event catalog
+                                      +--------> MySQL
 ```
 
-- `src/`: React user interface; PixiJS renders the seat plan and Backbone keeps the selected seats observable.
-- `server/`: Express API for holds, checkout, QR ticket issuance, operator access and local/MySQL persistence. With MySQL, checkout writes customers, encrypted contacts, payment references, orders and tickets to the normalized tables; sales and access control read those tables. The JSON state remains only for catalog, holds, branding and integrations. See [privacy controls](PRIVACY.md).
-- `grails/`: catalog service that validates and stores events.
-- `infra/init.sql`: initial MySQL schema and seed events.
-- `scripts/`: Python documentation, verification, hook installation and human-confirmed publishing automation.
+The React application uses Backbone for observable seat selection and PixiJS for the graphical map. Express owns reservations, checkout, ticket issuance, operator endpoints and admission. Grails validates and persists catalog events. MySQL is authoritative for normalized sales and tickets; Redis is used only for rate limiting.
+
+## Data ownership
+
+| Data | Authority |
+| --- | --- |
+| Catalog events | `catalog_events`, managed through Grails |
+| Customers and encrypted contacts | `customers`, `customer_contacts` |
+| Orders and simulated payments | `sales_orders`, `order_payments`, `payment_methods` |
+| Sold seats and admission state | `issued_tickets` |
+| Active holds, branding and integration intent | `ticketing_state` JSON |
+| Request counters | Redis |
+
+All checkout writes occur in one MySQL transaction. The single `ticketing_state` row is locked while reservations or checkout mutate shared state. Ticket admission is an atomic conditional update, so only the first concurrent scan succeeds.
 
 ## Trust boundaries
 
-- Browser input, QR tokens and external integrations are untrusted input.
-- `ADMIN_KEY`, `SERVICE_KEY` and database passwords come from environment variables and must not enter Git, logs or documentation.
-- MySQL is the inventory authority; Redis is limited to request rate limiting.
-- The optional commit-proposal request sends a size-limited Git diff to Gemini. It never sends API keys.
-- Customer contact data is purpose-separated from transactional records and is encrypted by the application in the MySQL deployment. Payment processors provide references; card and banking data never enters this service.
-- QR bearer tokens are derived with `TICKET_TOKEN_KEY`; only their SHA-256 hashes are stored. Checkout idempotency is enforced by the unique reservation identifier on `sales_orders`.
+- Browser payloads, QR tokens and integration names are untrusted.
+- `ADMIN_KEY`, `SERVICE_KEY`, database credentials, `CONTACT_ENCRYPTION_KEY` and `TICKET_TOKEN_KEY` are deployment secrets.
+- Contact ciphertext is separated from orders. Sales endpoints return customer pseudonyms rather than contacts.
+- Payment records contain simulated or provider references, never card or banking credentials.
+- QR bearer values are not stored; only their SHA-256 hashes are persisted.
+- Caddy is the public TLS boundary. Application, database, cache and catalog ports remain private or loopback-bound.
+
+## Detailed reference
+
+See [Technical reference](TECHNICAL_REFERENCE.md) for component responsibilities, schema relationships, transaction sequences, cryptographic formats, API behavior, migrations and known limitations. See [Privacy controls](PRIVACY.md) and [Operations](OPERATIONS.md) for policy boundaries and runbooks.
 
 ## Related decisions
 
 - [Continuous documentation and safe publishing](decisions/0001-continuous-documentation-and-safe-publishing.md)
+- [Privacy by design transactional model](decisions/0002-privacy-by-design-transactional-model.md)

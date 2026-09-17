@@ -2,6 +2,22 @@
 
 Ticketing is currently a demonstration product. This document defines the target baseline for its MySQL deployment; it does not by itself establish legal compliance.
 
+## Implementation status
+
+| Control | Status |
+| --- | --- |
+| Purpose-separated customer, contact, order, payment and ticket tables | Active in MySQL mode |
+| AES-256-GCM contact encryption | Active |
+| Opaque deterministic customer aliases | Active |
+| Hashed QR bearer credentials | Active |
+| Atomic single-use admission | Active |
+| Card and banking-data exclusion | Active by schema and API design |
+| Consent recording and withdrawal | Schema present; workflow pending |
+| Privacy audit trail | Schema present; application writes pending |
+| Retention, erasure and export procedures | Pending |
+| Individual users and role-based access | Pending; shared operator key is demo-only |
+| Key rotation | Pending; keys must currently remain stable |
+
 ## Data boundaries
 
 | Purpose | Minimum data | Storage boundary | Retention |
@@ -26,3 +42,5 @@ Do not collect identity documents, birth dates, postal addresses, card numbers, 
 ## Demo data
 
 Demo orders must use fictional names, non-deliverable addresses and simulated payment labels. Public figures are not used as customers or evidence of a commercial relationship.
+
+The additive showcase seed stores distinct encrypted `example.test` addresses and opaque aliases. It stores method categories and synthetic provider references, not payment credentials. Historic seeded aliases are normalized by migration `004`.

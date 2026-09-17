@@ -17,6 +17,10 @@ Every production table will carry an explicit retention category. Holds expire a
 ## Consequences
 
 - Existing JSON state requires a one-time migration before production use.
-- `PII_ENCRYPTION_KEY` becomes a required, independently rotated deployment secret.
+- `CONTACT_ENCRYPTION_KEY` and `TICKET_TOKEN_KEY` become required deployment secrets. Rotation requires an explicit data and credential migration.
 - Roles and authorization need to replace the shared operator key before any non-demo operation.
 - Pseudonymisation reduces risk but does not remove data-protection obligations.
+
+## Implementation note
+
+The normalized checkout, encrypted contacts, hashed ticket credentials and pseudonymous sales view are active in the MySQL deployment. Consent capture, audit writes, retention enforcement, data-subject workflows and role-based authorization remain pending. The accepted direction therefore remains valid, but the complete target described above is not yet implemented.

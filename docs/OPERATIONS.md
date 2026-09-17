@@ -1,72 +1,161 @@
 # Operations
 
-## Verification and documentation
+## Verification
 
 ```powershell
-npm run verify
-npm run docs:changelog
-npm run docs:decision -- "Short decision title"
-npm run hooks:install
+npm.cmd test
+npm.cmd run build
+npx.cmd playwright test
+npm.cmd run verify
 ```
 
-On Windows, `npm run verify` requires the Python launcher (`py -3`). The Git hook uses `scripts/verify.sh`, which also looks for a project virtual environment, `python3`, `python`, and then `py -3`.
+`npm run verify` requires Python 3. It checks whitespace, required documentation, likely secrets and private/generated files, then runs Node tests and the production build. The browser suite is separate and covers the complete purchase and admission flow. MySQL, Redis and Grails still require deployment-level integration verification.
 
-`npm run verify` invokes Python 3 and runs whitespace checks, checks required documentation, scans for likely private files and secrets, runs Node tests and builds the browser bundle. The pre-commit hook runs the same verifier once enabled. GitHub Actions invokes `python scripts/verify.py` directly because the Windows `py` launcher is not available on its Linux runner.
-
-## Commit publication
+Useful documentation commands:
 
 ```powershell
-# Proposal and verification only; does not change Git state.
-npm run publish:preview -- --title "docs: add documentation automation" --description "Document the automated verification and publishing workflow."
-
-# Human-confirmed commit and push.
-npm run publish -- --title "docs: add documentation automation" --description "Document the automated verification and publishing workflow."
+npm.cmd run docs:changelog
+npm.cmd run docs:decision -- "Short decision title"
+npm.cmd run hooks:install
 ```
 
-When no title and description are passed, `publish` uses `GEMINI_API_KEY` and optionally `GEMINI_COMMIT_MODELS` (comma-separated) or `GEMINI_COMMIT_MODEL` from the local `.env`, then uses `GROQ_API_KEY` and `OPENROUTER_API_KEY` if configured. Each request waits up to 15 seconds by default; set `COMMIT_GENERATION_TIMEOUT` to override it. The proposal receives at most 24,000 characters containing changed paths, tracked diffs and the text of new files, and must describe the intent and behavior of the change. If no provider is configured or every provider fails, publication stops instead of producing a generic commit; `--title` and `--description` remain available for a manual proposal. Preview verifies once without changing Git. Publication stages the selected paths, verifies that exact state once, and commits with `--no-verify` because the identical pre-commit verifier has just succeeded; this prevents repeated production builds. The command only publishes after the literal `PUBLISH` confirmation and does not force push.
+## Configuration
 
-`.env` stays ignored. Never put real `ADMIN_KEY`, `SERVICE_KEY`, database credentials or provider keys in a commit, documentation, terminal recording or issue.
+Use `.env.example` only as a field reference. Generate a distinct random value for every secret and never commit `.env`.
 
-## Runtime
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `ADMIN_KEY` | Compose | Shared demo operator credential |
+| `SERVICE_KEY` | Compose | Express-to-Grails credential |
+| `DB_PASSWORD` | Compose | Application database account |
+| `MYSQL_ROOT_PASSWORD` | Compose | Database administration |
+| `CONTACT_ENCRYPTION_KEY` | MySQL mode | Contact encryption and customer aliases |
+| `TICKET_TOKEN_KEY` | MySQL mode | Deterministic QR bearer tokens |
+| `ALLOW_DEMO_PAYMENTS` | Checkout | Must equal `true` for simulated issuance |
+| `MYSQL_URL` | MySQL mode | Injected by Compose |
+| `REDIS_URL` | Optional | Enables API rate limiting |
+| `GRAILS_URL` | Optional | Enables catalog synchronization |
 
-See [README](../README.md) for running the demo and Compose stack. Use `.env.example` as the non-secret reference for Compose configuration. Grails needs Java 17; Compose needs Docker. Before a deployment, run `npm run verify`, build the Compose stack, configure distinct production secrets and keep MySQL/Redis private to the application network.
+Contact and ticket keys must each contain at least 32 characters. Keep protected recovery copies. Do not rotate either value by editing `.env` alone; rotation requires a planned data and credential migration.
 
-### Replacing the deployed data with demonstration data
-
-`scripts/seed-demo.mjs` replaces the complete event catalog and transactional state with fictional demonstration data: events, orders, tickets, checked-in tickets and simulated provider settings. It is intentionally guarded because it deletes the current catalog and state. It must only be used on a demonstration deployment, after a verified backup.
+## Deployment
 
 ```bash
 cd /srv/projects/ticketing
-sudo docker compose exec -T -e CONFIRM_DEMO_RESET=ticketing-demo app node scripts/seed-demo.mjs --reset
+git pull --ff-only
+sudo docker compose config --quiet
+sudo docker compose up -d --build app
+sudo docker compose ps
+sudo docker compose logs --tail=100 app
+curl -fsS http://127.0.0.1:3001/api/health
 ```
 
-The dataset uses `example.test` addresses and simulated payment labels only. It stores no cards, payment credentials or real customer data.
+The application publishes only `127.0.0.1:3001`. A host reverse proxy terminates public TLS. Example Caddy configuration:
 
-### Adding showcase data without deleting current sales
+```caddyfile
+ticketing.example.test {
+    encode zstd gzip
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+    reverse_proxy 127.0.0.1:3001
+}
+```
 
-`scripts/seed-showcase.mjs` idempotently adds six fictional events and fourteen normalized demo sales. It preserves existing data, encrypts distinct `example.test` contacts with the configured contact key, stores simulated payment references only, and can be rerun without duplicating orders or tickets:
+Replace the example hostname. Allow inbound TCP 80/443 at host and provider firewalls. Do not publish ports 3001, 3306, 6379 or 8080 publicly.
+
+## Backup and restore
+
+Create a database dump before every schema migration or destructive data operation:
+
+```bash
+sudo docker compose exec -T mysql sh -c 'exec mysqldump --no-tablespaces -uticketing -p"$MYSQL_PASSWORD" ticketing' > "ticketing-$(date +%F-%H%M).sql"
+test -s "$(ls -t ticketing-*.sql | head -1)"
+```
+
+Treat dumps as sensitive because they contain encrypted contacts and provider references. Restrict access and retain the matching encryption keys in protected recovery storage.
+
+Restore only during a declared recovery window after confirming the exact backup target:
+
+```bash
+sudo docker compose stop app catalog
+sudo docker compose exec -T mysql sh -c 'exec mysql -uticketing -p"$MYSQL_PASSWORD" ticketing' < verified-backup.sql
+sudo docker compose start catalog app
+```
+
+Test restoration outside production before relying on a backup procedure.
+
+## Schema migrations
+
+New MySQL volumes execute `infra/init.sql` and migrations `002` through `004` automatically in filename order. MySQL initialization scripts run only when the data directory is empty. Existing deployments must apply each missing migration explicitly after a verified backup:
+
+```bash
+sudo docker compose exec -T mysql sh -c 'exec mysql -uticketing -p"$MYSQL_PASSWORD" ticketing' < infra/migrations/002_privacy_core.sql
+sudo docker compose exec -T mysql sh -c 'exec mysql -uticketing -p"$MYSQL_PASSWORD" ticketing' < infra/migrations/003_activate_relational_store.sql
+sudo docker compose exec -T mysql sh -c 'exec mysql -uticketing -p"$MYSQL_PASSWORD" ticketing' < infra/migrations/004_normalize_demo_pseudonyms.sql
+```
+
+Migration `003` is a one-time `ALTER TABLE` and must not be applied twice. Confirm the active column before deploying relational application code:
+
+```bash
+sudo docker compose exec -T mysql sh -c 'exec mysql -N -uticketing -p"$MYSQL_PASSWORD" ticketing -e "SHOW COLUMNS FROM sales_orders LIKE '\''hold_id'\'';"'
+```
+
+## Demonstration data
+
+### Additive showcase seed
+
+`scripts/seed-showcase.mjs` idempotently adds six fictional events, fourteen normalized demo sales and twenty-four tickets. It preserves existing data, encrypts distinct `example.test` contacts, uses opaque aliases and stores only simulated payment references.
 
 ```bash
 sudo docker compose exec -T -e CONFIRM_DEMO_SEED=ticketing-demo app node scripts/seed-showcase.mjs --append
 ```
 
-Existing deployments should apply `004_normalize_demo_pseudonyms.sql` once. It changes only legacy/showcase display aliases to the opaque `Cliente <12 hex>` format; it does not modify encrypted contacts, orders or payments.
+Rerunning it updates showcase event payloads and aliases but does not duplicate orders or tickets.
 
-### Privacy-core schema migration
+### Legacy JSON reset
 
-The relational privacy schema is in `infra/migrations/002_privacy_core.sql`. Take and verify a backup before applying it. The migration is additive and creates no personal data by itself:
-
-```bash
-cd /srv/projects/ticketing
-sudo docker compose exec -T mysql sh -c 'exec mysql -uticketing -p"$MYSQL_PASSWORD" ticketing' < infra/migrations/002_privacy_core.sql
-```
-
-Do not enable contact collection until application-level encryption and role-based access are deployed. The schema deliberately contains provider references only; it has no fields for card data or identity documents.
-
-Before activating the relational application version on an existing deployment, apply the idempotency migration after `002_privacy_core.sql`:
+`scripts/seed-demo.mjs` predates the active relational store. It replaces the catalog and JSON compatibility state but does not populate normalized sales tables. Do not use it on the relational deployment. It remains guarded for legacy/local demonstrations:
 
 ```bash
-sudo docker compose exec -T mysql sh -c 'exec mysql -uticketing -p"$MYSQL_PASSWORD" ticketing' < infra/migrations/003_activate_relational_store.sql
+sudo docker compose exec -T -e CONFIRM_DEMO_RESET=ticketing-demo app node scripts/seed-demo.mjs --reset
 ```
 
-Set independent random values of at least 32 characters for `CONTACT_ENCRYPTION_KEY` and `TICKET_TOKEN_KEY`, then recreate the application container. Keep both values stable and backed up: changing the contact key prevents contact recovery, while changing the ticket key prevents regenerated QR tokens from matching previously issued tickets. Fresh Compose volumes apply migrations `002` and `003` automatically.
+## Post-deployment verification
+
+1. Confirm `/api/health` reports `storage: mysql` and Redis when configured.
+2. Open the catalog and reserve a new, unsold seat.
+3. Confirm the UI shows the selected seat and server-calculated total.
+4. Complete a simulated checkout and confirm the sale uses an opaque customer alias.
+5. Scan one issued token; the first scan must succeed and the second must return `409`.
+6. Confirm recent application logs contain no unexpected errors.
+
+Useful database checks:
+
+```bash
+sudo docker compose exec -T mysql sh -c 'exec mysql -N -uticketing -p"$MYSQL_PASSWORD" ticketing -e "SELECT COUNT(*) orders FROM sales_orders; SELECT COUNT(*) tickets FROM issued_tickets; SELECT COUNT(*) checked_in FROM issued_tickets WHERE used_at IS NOT NULL;"'
+sudo docker compose exec -T mysql sh -c 'exec mysql -N -uticketing -p"$MYSQL_PASSWORD" ticketing -e "SELECT COUNT(*) invalid_aliases FROM customers WHERE pseudonym NOT REGEXP '\''^Cliente [0-9a-f]{12}$'\'';"'
+```
+
+## Diagnostics
+
+```bash
+sudo docker compose ps
+sudo docker compose logs --since=15m app catalog mysql redis
+sudo ss -ltnp | grep -E ':(80|443|3001)\b'
+curl -vk --resolve ticketing.example.test:443:127.0.0.1 https://ticketing.example.test/api/health
+```
+
+An HTTP `500` requires application-log inspection; clients intentionally receive a generic message. A `409` from `/api/scan` normally means the ticket was already consumed. A `502` from `/api/events` means the Grails catalog failed or exceeded its five-second timeout.
+
+## Commit publication
+
+```powershell
+npm.cmd run publish:preview -- --title "docs: update technical reference" --description "Keep architecture and operations aligned with the deployed system."
+npm.cmd run publish -- --title "docs: update technical reference" --description "Keep architecture and operations aligned with the deployed system."
+```
+
+Publication verifies the selected state and requires the literal `PUBLISH` confirmation before committing and pushing. It never force-pushes. Provider-assisted commit proposals receive a size-limited diff, never environment values; see `scripts/publish.py` for the exact behavior.
