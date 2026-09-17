@@ -107,6 +107,6 @@ References: [Grails 7 upgrading](https://grails.apache.org/docs/7.0.2/guide/upgr
 
 ## Documentation and publishing
 
-Technical documentation lives in [`docs/`](docs/): [architecture](docs/ARCHITECTURE.md), [technical reference](docs/TECHNICAL_REFERENCE.md), [operations](docs/OPERATIONS.md), [privacy controls](docs/PRIVACY.md) and [decisions](docs/decisions/README.md). `npm run docs:changelog` generates `CHANGELOG.md`, `npm run docs:decision -- "Title"` creates an ADR, and `npm run hooks:install` enables pre-commit verification.
+Technical documentation lives in [`docs/`](docs/): [architecture](docs/ARCHITECTURE.md), [technical reference](docs/TECHNICAL_REFERENCE.md), [testing plan](docs/TESTING.md), [operations](docs/OPERATIONS.md), [privacy controls](docs/PRIVACY.md) and [decisions](docs/decisions/README.md). `npm run docs:changelog` generates `CHANGELOG.md`, `npm run docs:decision -- "Title"` creates an ADR, and `npm run hooks:install` enables pre-commit verification.
 
 `npm run publish:preview` verifies and proposes Conventional Commit metadata without changing Git. `npm run publish` requires `PUBLISH` before committing and pushing. Manual metadata and provider configuration are documented in [`docs/OPERATIONS.md`](docs/OPERATIONS.md).

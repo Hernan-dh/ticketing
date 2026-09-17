@@ -4,12 +4,15 @@
 
 ```powershell
 npm.cmd test
+npm.cmd run test:browser
+npm.cmd run test:integration
+npm.cmd run test:all
 npm.cmd run build
 npx.cmd playwright test
 npm.cmd run verify
 ```
 
-`npm run verify` requires Python 3. It checks whitespace, required documentation, likely secrets and private/generated files, then runs Node tests and the production build. The browser suite is separate and covers the complete purchase and admission flow. MySQL, Redis and Grails still require deployment-level integration verification.
+`npm run verify` requires Python 3. It checks whitespace, required documentation, likely secrets and private/generated files, then runs Node tests and the production build. `test:browser` covers the complete UI flow; `test:integration` builds a disposable Compose stack with MySQL, Redis and Grails. See the [automated testing plan](TESTING.md) for prerequisites and isolation guarantees.
 
 Useful documentation commands:
 

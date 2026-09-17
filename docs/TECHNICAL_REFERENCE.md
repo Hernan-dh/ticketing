@@ -181,4 +181,4 @@ Compose mounts these files into MySQL's initialization directory for new volumes
 - The payment provider is simulated; there are no webhooks, reconciliation or refunds.
 - RFID is a display option only; UID association and hardware integration are pending.
 - Health reports process configuration, not deep dependency readiness.
-- No automated MySQL/Redis/Grails integration suite currently runs in `npm test`.
+- MySQL/Redis/Grails integration tests run separately through `npm run test:integration`; Docker is required.
