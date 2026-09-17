@@ -131,11 +131,14 @@ function App() {
     [channel, setChannel] = useState("Web"),
     [hold, setHold] = useState(null),
     [order, setOrder] = useState(null),
+    [buyerName, setBuyerName] = useState(""),
     [email, setEmail] = useState(""),
     [paymentMethod, setPaymentMethod] = useState("demo_card"),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
     [admin, setAdmin] = useState(null),
+    [customers, setCustomers] = useState(null),
+    [revealed, setRevealed] = useState({}),
     [key, setKey] = useState(sessionStorage.getItem("operator") || ""),
     [token, setToken] = useState(""),
     [scanEvent, setScanEvent] = useState(""),
@@ -228,7 +231,12 @@ function App() {
   const login = () =>
     run(async () => {
       sessionStorage.setItem("operator", key);
-      setAdmin(await api("/admin"));
+      const [dashboard, customerData] = await Promise.all([
+        api("/admin"),
+        api("/customers"),
+      ]);
+      setAdmin(dashboard);
+      setCustomers(customerData.customers);
     });
   const seconds = hold
     ? Math.max(0, Math.ceil((hold.expiresAt - now) / 1000))
@@ -266,6 +274,7 @@ function App() {
           {[
             ["Eventos", "◫"],
             ["Ventas", "↗"],
+            ["Clientes", "◎"],
             ["Control de acceso", "⌘"],
             ["Integraciones", "⊞"],
             ["Mi marca", "◈"],
@@ -633,6 +642,14 @@ function App() {
                           {String(seconds % 60).padStart(2, "0")}
                         </p>
                         <label>
+                          Nombre del comprador
+                          <input
+                            value={buyerName}
+                            onChange={(e) => setBuyerName(e.target.value)}
+                            placeholder="Valentina Robles (ficticio)"
+                          />
+                        </label>
+                        <label>
                           Correo del comprador
                           <input
                             type="email"
@@ -659,12 +676,13 @@ function App() {
                         </small>
                         <button
                           className="primary"
-                          disabled={busy || !seconds}
+                          disabled={busy || !seconds || buyerName.trim().length < 2}
                           onClick={() =>
                             run(async () =>
                               setOrder(
                                 await api("/checkout", "POST", {
                                   holdId: hold.id,
+                                  buyerName,
                                   email,
                                   paymentMethod,
                                 }),
@@ -849,6 +867,17 @@ function App() {
                   ) : (
                     <p>Ingresá tu clave para consultar las ventas.</p>
                   )}
+                </section>
+              )}
+              {page === "Clientes" && (
+                <section className="panel">
+                  <h2>Base de clientes seudonimizada</h2>
+                  <p>Los datos identificatorios permanecen cifrados. Cada revelado queda auditado.</p>
+                  {customers ? (
+                    <div className="table-wrap"><table><thead><tr><th>Cliente</th><th>Compras</th><th>Tickets</th><th>Total</th><th>Datos protegidos</th></tr></thead><tbody>
+                      {customers.map((customer) => <tr key={customer.id}><td>{customer.pseudonym}</td><td>{customer.orders}</td><td>{customer.tickets}</td><td>{money(customer.total)}</td><td>{revealed[customer.id] ? <span>{revealed[customer.id].name} · {revealed[customer.id].email}</span> : customer.hasProfile ? <button onClick={() => run(async()=>{const details=await api(`/customers/${customer.id}/reveal`,"POST");setRevealed(current=>({...current,[customer.id]:details}));})}>Revelar y auditar</button> : <span>Sin perfil cifrado</span>}</td></tr>)}
+                    </tbody></table></div>
+                  ) : <p>Ingresá tu clave para consultar clientes.</p>}
                 </section>
               )}
               {page === "Control de acceso" && (

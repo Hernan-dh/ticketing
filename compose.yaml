@@ -12,6 +12,7 @@ services:
       - ./infra/migrations/002_privacy_core.sql:/docker-entrypoint-initdb.d/002-privacy-core.sql:ro
       - ./infra/migrations/003_activate_relational_store.sql:/docker-entrypoint-initdb.d/003-relational-store.sql:ro
       - ./infra/migrations/004_normalize_demo_pseudonyms.sql:/docker-entrypoint-initdb.d/004-normalize-demo-pseudonyms.sql:ro
+      - ./infra/migrations/005_customer_profiles.sql:/docker-entrypoint-initdb.d/005-customer-profiles.sql:ro
     healthcheck:
       test: [CMD-SHELL, 'mysqladmin ping -h localhost -u root -p"$$MYSQL_ROOT_PASSWORD" --silent']
       interval: 5s

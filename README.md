@@ -85,6 +85,8 @@ Operator endpoints require `x-admin-key`. Grails requires `X-Service-Key` inside
 | POST | `/api/checkout` | Simulate payment and issue tickets |
 | POST | `/api/scan` | Validate a ticket |
 | GET | `/api/admin` | Operator sales and metrics |
+| GET | `/api/customers` | Pseudonymous customer base and aggregate history |
+| POST | `/api/customers/:id/reveal` | Reveal encrypted demo profile and write an audit event |
 | PUT | `/api/brand` | Update branding |
 | PUT | `/api/integrations` | Register a provider |
 

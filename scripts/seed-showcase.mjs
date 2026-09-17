@@ -25,6 +25,7 @@ const sales = [
   ['demo-gardel','Web','card',['B2'],false],['demo-paez','Web','card',['A1','A2','A3'],false],
   ['demo-paez','Móvil','wallet',['B1'],false],['demo-paez','Boletería','cash',['C2','C3'],false]
 ];
+const fictionalNames=['Valentina Robles','Mateo Ferrer','Camila Benítez','Julián Acosta','Sofía Pereyra','Tomás Quiroga','Martina Lagos','Bruno Méndez','Lara Villalba','Nicolás Soria','Emilia Funes','Franco Leiva','Renata Molina','Simón Cabrera'];
 
 const stableId=(namespace,value)=>{const hash=createHash('sha256').update(`${namespace}:${value}`).digest('hex');return `${hash.slice(0,8)}-${hash.slice(8,12)}-4${hash.slice(13,16)}-8${hash.slice(17,20)}-${hash.slice(20,32)}`;};
 const contactKey=createHash('sha256').update(process.env.CONTACT_ENCRYPTION_KEY).digest();
@@ -45,8 +46,10 @@ try {
     const customerId=stableId('showcase-customer',number),contactId=stableId('showcase-contact',number),methodId=stableId('showcase-method',number),orderId=stableId('showcase-order',number),paymentId=stableId('showcase-payment',number),holdId=stableId('showcase-hold',number),providerReference=`showcase_${number}`;
     const createdAt=new Date(Date.UTC(2026,8,index+1,15));
     const pseudonym=`Cliente ${createHmac('sha256',contactKey).update(email).digest('hex').slice(0,12)}`;
-    await connection.query('INSERT INTO customers (id,pseudonym) VALUES (?,?) ON DUPLICATE KEY UPDATE pseudonym=VALUES(pseudonym)',[customerId,pseudonym]);
+    const subjectHash=createHmac('sha256',contactKey).update(email).digest();
+    await connection.query('INSERT INTO customers (id,subject_hash,pseudonym,last_activity_at) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE subject_hash=VALUES(subject_hash),pseudonym=VALUES(pseudonym),last_activity_at=VALUES(last_activity_at)',[customerId,subjectHash,pseudonym,createdAt]);
     await connection.query("INSERT IGNORE INTO customer_contacts (id,customer_id,purpose,ciphertext) VALUES (?,?,'ticket_delivery',?)",[contactId,customerId,encrypt(email)]);
+    await connection.query('INSERT INTO customer_profiles (customer_id,display_name_ciphertext) VALUES (?,?) ON DUPLICATE KEY UPDATE display_name_ciphertext=VALUES(display_name_ciphertext)',[customerId,encrypt(fictionalNames[index])]);
     await connection.query("INSERT IGNORE INTO payment_methods (id,customer_id,provider,provider_reference,method_type) VALUES (?,?,'demo',?,?)",[methodId,customerId,providerReference,methodType]);
     await connection.query("INSERT IGNORE INTO sales_orders (id,hold_id,customer_id,event_id,channel,total_amount,payment_status,created_at) VALUES (?,?,?,?,?,?,'demo_paid',?)",[orderId,holdId,customerId,eventId,channel,seats.length*event.price,createdAt]);
     await connection.query("INSERT IGNORE INTO order_payments (id,order_id,payment_method_id,provider_reference,amount,status,created_at) VALUES (?,?,?,?,?,'demo_paid',?)",[paymentId,orderId,methodId,providerReference,seats.length*event.price,createdAt]);

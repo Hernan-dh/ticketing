@@ -90,12 +90,13 @@ Test restoration outside production before relying on a backup procedure.
 
 ## Schema migrations
 
-New MySQL volumes execute `infra/init.sql` and migrations `002` through `004` automatically in filename order. MySQL initialization scripts run only when the data directory is empty. Existing deployments must apply each missing migration explicitly after a verified backup:
+New MySQL volumes execute `infra/init.sql` and migrations `002` through `005` automatically in filename order. MySQL initialization scripts run only when the data directory is empty. Existing deployments must apply each missing migration explicitly after a verified backup:
 
 ```bash
 sudo docker compose exec -T mysql sh -c 'exec mysql -uticketing -p"$MYSQL_PASSWORD" ticketing' < infra/migrations/002_privacy_core.sql
 sudo docker compose exec -T mysql sh -c 'exec mysql -uticketing -p"$MYSQL_PASSWORD" ticketing' < infra/migrations/003_activate_relational_store.sql
 sudo docker compose exec -T mysql sh -c 'exec mysql -uticketing -p"$MYSQL_PASSWORD" ticketing' < infra/migrations/004_normalize_demo_pseudonyms.sql
+sudo docker compose exec -T mysql sh -c 'exec mysql -uticketing -p"$MYSQL_PASSWORD" ticketing' < infra/migrations/005_customer_profiles.sql
 ```
 
 Migration `003` is a one-time `ALTER TABLE` and must not be applied twice. Confirm the active column before deploying relational application code:

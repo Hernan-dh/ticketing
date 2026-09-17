@@ -70,7 +70,8 @@ privacy_audit_log                    (schema present; writes pending)
 | Table | Stored data | Important constraints |
 | --- | --- | --- |
 | `catalog_events` | Event JSON payload | Event ID primary key |
-| `customers` | UUID and opaque pseudonym | No email or payment data |
+| `customers` | UUID, lookup HMAC and opaque pseudonym | No plaintext identity or payment data |
+| `customer_profiles` | AES-GCM encrypted display name | One profile per customer |
 | `customer_contacts` | AES-GCM ciphertext and key version | One active purpose per customer |
 | `payment_methods` | Demo/provider reference and method type | Unique provider/reference pair |
 | `sales_orders` | Customer, event, channel, currency, amount and status | Unique nullable `hold_id` for idempotency |
@@ -101,7 +102,7 @@ Non-web channels require the operator key. The public web channel does not.
 2. Look up `sales_orders.hold_id`. If it exists, reconstruct and return the original order and deterministic ticket tokens.
 3. Validate that the hold is active, the email is syntactically valid and the demo method is allowed.
 4. Upsert the referenced event payload.
-5. Create the customer, encrypted delivery contact and simulated payment method.
+5. Find or create the customer by email HMAC, then encrypt the name and delivery contact separately.
 6. Insert `sales_orders` and `order_payments`.
 7. Create one `issued_tickets` record per seat.
 8. Remove the hold and commit all relational and JSON changes together.
@@ -152,6 +153,8 @@ Changing either secret without a planned migration is destructive: the contact k
 | `POST /api/checkout` | Public, demo flag required | Creates customer, contact, payment, order and tickets |
 | `POST /api/scan` | Operator | Sets ticket `used_at` once |
 | `GET /api/admin` | Operator | None |
+| `GET /api/customers` | Operator | Returns pseudonyms and aggregate history |
+| `POST /api/customers/:id/reveal` | Operator | Decrypts name/email and writes a privacy audit event |
 | `PUT /api/brand` | Operator | Updates JSON branding |
 | `PUT /api/integrations` | Operator | Adds JSON configuration intent |
 
@@ -165,6 +168,7 @@ Migrations are ordered as follows:
 2. `002_privacy_core.sql`: normalized privacy and transaction tables.
 3. `003_activate_relational_store.sql`: unique checkout `hold_id`.
 4. `004_normalize_demo_pseudonyms.sql`: consistent opaque aliases for historic demo customers.
+5. `005_customer_profiles.sql`: customer lookup hashes, activity and encrypted names.
 
 Compose mounts these files into MySQL's initialization directory for new volumes. MySQL runs them only on first initialization; existing deployments must apply each new migration explicitly and exactly once as described in [Operations](OPERATIONS.md).
 

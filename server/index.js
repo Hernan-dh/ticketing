@@ -22,6 +22,8 @@ app.post('/api/holds',async(q,r)=>{if(q.body.channel!=='Web'){let accepted=false
 app.post('/api/checkout',async(q,r)=>{if(process.env.ALLOW_DEMO_PAYMENTS!=='true')fail('El gateway de pago todavía no está configurado.',503);r.json(await store.checkout(q.body));});
 app.post('/api/scan',admin,async(q,r)=>r.json(await store.scan(q.body)));
 app.get('/api/admin',admin,async(_q,r)=>r.json(await store.admin()));
+app.get('/api/customers',admin,async(_q,r)=>r.json({customers:await store.customers()}));
+app.post('/api/customers/:id/reveal',admin,async(q,r)=>r.json(await store.revealCustomer(q.params.id)));
 app.put('/api/brand',admin,async(q,r)=>{const {name,color}=q.body;if(typeof name!=='string'||!name.trim()||name.length>60||!/^#[0-9a-f]{6}$/i.test(color))fail('Nombre o color inválidos.');r.json(await store.transaction(s=>s.brand={name:name.trim(),color}));});
 app.put('/api/integrations',admin,async(q,r)=>{const {provider,type}=q.body;if(!['Pago','Correo','Entrega','Beneficios','Sitio de venta'].includes(type)||typeof provider!=='string'||!provider.trim()||provider.length>80)fail('Configuración inválida.');r.json(await store.transaction(s=>{const item={id:randomBytes(8).toString('hex'),provider:provider.trim(),type,status:'Pendiente de conexión'};s.integrations.push(item);return item;}));});
 app.use(express.static(resolve('dist')));

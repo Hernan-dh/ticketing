@@ -8,12 +8,13 @@ Ticketing is currently a demonstration product. This document defines the target
 | --- | --- |
 | Purpose-separated customer, contact, order, payment and ticket tables | Active in MySQL mode |
 | AES-256-GCM contact encryption | Active |
+| AES-256-GCM customer-name encryption | Active |
 | Opaque deterministic customer aliases | Active |
 | Hashed QR bearer credentials | Active |
 | Atomic single-use admission | Active |
 | Card and banking-data exclusion | Active by schema and API design |
 | Consent recording and withdrawal | Schema present; workflow pending |
-| Privacy audit trail | Schema present; application writes pending |
+| Privacy audit trail | Customer-data reveals active; broader action coverage pending |
 | Retention, erasure and export procedures | Pending |
 | Individual users and role-based access | Pending; shared operator key is demo-only |
 | Key rotation | Pending; keys must currently remain stable |
@@ -22,7 +23,7 @@ Ticketing is currently a demonstration product. This document defines the target
 
 | Purpose | Minimum data | Storage boundary | Retention |
 | --- | --- | --- | --- |
-| Issue and recover tickets | internal customer ID; encrypted delivery contact only when delivery is requested | customer/contact store, separate from orders | configured operational period, then delete or anonymise |
+| Issue and recover tickets | internal customer ID; encrypted fictional/display name and delivery contact | customer profile/contact stores, separate from orders | configured operational period, then delete or anonymise |
 | Take payment | provider reference, method type, state and amount | payment store | accounting period required by the operator |
 | Admit a guest | random ticket token, event and seat | ticket store | event and dispute period |
 | Operate the service | pseudonymous actor ID, action, timestamp and outcome | audit store | limited security retention |
