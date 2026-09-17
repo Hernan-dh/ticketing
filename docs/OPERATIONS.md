@@ -109,7 +109,7 @@ sudo docker compose exec -T mysql sh -c 'exec mysql -N -uticketing -p"$MYSQL_PAS
 
 ### Additive showcase seed
 
-`scripts/seed-showcase.mjs` idempotently adds six fictional events, fourteen normalized demo sales and twenty-four tickets. It preserves existing data, encrypts distinct `example.test` contacts, uses opaque aliases and stores only simulated payment references.
+`scripts/seed-showcase.mjs` idempotently adds six fictional events, twenty-four normalized demo sales and thirty-nine tickets. It preserves existing data, encrypts distinct `example.test` contacts and fictional names, uses opaque aliases and stores only simulated payment references.
 
 ```bash
 sudo docker compose exec -T -e CONFIRM_DEMO_SEED=ticketing-demo app node scripts/seed-showcase.mjs --append

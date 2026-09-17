@@ -23,9 +23,14 @@ const sales = [
   ['demo-charly','Móvil','wallet',['A1','A2'],false],['demo-charly','Boletería','cash',['C5','C6'],false],
   ['demo-charly','Web','card',['D1'],false],['demo-gardel','Distribuidor','bank_transfer',['A1','A2'],false],
   ['demo-gardel','Web','card',['B2'],false],['demo-paez','Web','card',['A1','A2','A3'],false],
-  ['demo-paez','Móvil','wallet',['B1'],false],['demo-paez','Boletería','cash',['C2','C3'],false]
+  ['demo-paez','Móvil','wallet',['B1'],false],['demo-paez','Boletería','cash',['C2','C3'],false],
+  ['demo-cerati','Web','card',['C1'],false],['demo-cerati','Móvil','wallet',['C2','C3'],false],
+  ['demo-spinetta','Web','bank_transfer',['B1'],false],['demo-spinetta','Boletería','cash',['B2','B3'],false],
+  ['demo-sosa','Web','card',['C1'],false],['demo-sosa','Distribuidor','bank_transfer',['C2','C3'],false],
+  ['demo-charly','Móvil','wallet',['B1'],false],['demo-charly','Web','card',['B2','B3'],false],
+  ['demo-gardel','Boletería','cash',['C1'],false],['demo-paez','Web','card',['D1','D2'],false]
 ];
-const fictionalNames=['Valentina Robles','Mateo Ferrer','Camila Benítez','Julián Acosta','Sofía Pereyra','Tomás Quiroga','Martina Lagos','Bruno Méndez','Lara Villalba','Nicolás Soria','Emilia Funes','Franco Leiva','Renata Molina','Simón Cabrera'];
+const fictionalNames=['Valentina Robles','Mateo Ferrer','Camila Benítez','Julián Acosta','Sofía Pereyra','Tomás Quiroga','Martina Lagos','Bruno Méndez','Lara Villalba','Nicolás Soria','Emilia Funes','Franco Leiva','Renata Molina','Simón Cabrera','Abril Navarro','Benjamín Paz','Catalina Roldán','Dante Silva','Emma Torres','Felipe Varela','Guadalupe Arias','Joaquín Bustos','Malena Costa','Ramiro Duarte'];
 
 const stableId=(namespace,value)=>{const hash=createHash('sha256').update(`${namespace}:${value}`).digest('hex');return `${hash.slice(0,8)}-${hash.slice(8,12)}-4${hash.slice(13,16)}-8${hash.slice(17,20)}-${hash.slice(20,32)}`;};
 const contactKey=createHash('sha256').update(process.env.CONTACT_ENCRYPTION_KEY).digest();
