@@ -7,7 +7,7 @@ A ticketing MVP with a bilingual Spanish/English interface, configurable brandin
 Requires Node.js 22 or newer:
 
 ```powershell
-cd C:\Users\herna\Projects\ticketing
+cd ticketing
 npm.cmd install
 $env:ALLOW_DEMO_PAYMENTS = 'true'
 npm.cmd run dev
@@ -23,7 +23,7 @@ The demo stores state in `data/state.json`. Run only one instance in this mode. 
 
 1. Open an event and select up to eight seats.
 2. Hold them for five minutes across all sales channels.
-3. Enter an email and select **Simulate payment and issue**. No charge or email is sent.
+3. Enter a buyer name and email, then select **Simulate payment and issue**. No charge or email is sent.
 4. Save or print the QR tickets.
 5. Under Access control, authenticate, choose the event, and scan the token. Only its first use succeeds.
 6. Review sales, update branding and integrations, or create an event.
@@ -38,7 +38,7 @@ Copy-Item .env.example .env
 docker compose up --build
 ```
 
-Open http://localhost:3001. The catalog can remain unavailable until Grails finishes starting. MySQL and Redis are not exposed to the host; the app is published on loopback only. `ALLOW_DEMO_PAYMENTS=true` enables simulated issuance.
+Open http://localhost:3001. Set `APP_PORT` in `.env` before startup to use another host port. The catalog can remain unavailable until Grails finishes starting. MySQL and Redis are not exposed to the host; the app is published on loopback only. `ALLOW_DEMO_PAYMENTS=true` enables simulated issuance.
 
 | Technology | Responsibility |
 |---|---|
@@ -82,7 +82,7 @@ Operator endpoints require `x-admin-key`. Grails requires `X-Service-Key` inside
 | GET / POST | `/api/events` | List or create events |
 | GET | `/api/events/:id/seats` | Sold and held seats |
 | POST | `/api/holds` | Create a seat hold |
-| POST | `/api/checkout` | Simulate payment and issue tickets |
+| POST | `/api/checkout` | Store the encrypted buyer profile, simulate payment, and issue tickets |
 | POST | `/api/scan` | Validate a ticket |
 | GET | `/api/admin` | Operator sales and metrics |
 | GET | `/api/customers` | Pseudonymous customer base and aggregate history |
@@ -96,12 +96,24 @@ Operator endpoints require `x-admin-key`. Grails requires `X-Service-Key` inside
 npm.cmd test
 npm.cmd run build
 npm.cmd run verify
-npm.cmd run docs:changelog
-npm.cmd run hooks:install
-npx.cmd playwright test
+npm.cmd run test:browser
+npm.cmd run test:integration
+npm.cmd run test:all
+$env:SMOKE_BASE_URL = 'https://ticketing.example.test'
+npm.cmd run test:smoke
 ```
 
-The Node suite covers inventory conflicts, expiration, server pricing, idempotency, invalid tokens, duplicate admission, validation, permissions, concurrency, and persistence. The browser test covers Pixi, checkout, QR issuance, admission, JavaScript errors, and mobile width. MySQL, Redis, and Grails require additional integration verification.
+`npm run verify` runs documentation and secret checks, Node tests, and the production build. The browser test covers Pixi, checkout, QR issuance, admission, JavaScript errors, and mobile width. The integration test creates and removes an isolated Compose stack to exercise MySQL, Redis, Grails, encrypted customer profiles, sales, and duplicate-admission protection. `test:all` runs all three layers and therefore requires Docker plus a Playwright browser. The post-deployment smoke test is read-only and requires an explicit `SMOKE_BASE_URL`.
+
+## Showcase data
+
+The full stack can be populated with six fictional events, twenty-four demo sales, and thirty-nine tickets. The seed is additive and idempotent: it preserves existing records and does not duplicate its own orders or tickets.
+
+```powershell
+docker compose exec -T -e CONFIRM_DEMO_SEED=ticketing-demo app node scripts/seed-showcase.mjs --append
+```
+
+It uses non-deliverable `example.test` contacts, encrypted buyer profiles, opaque aliases, and simulated payment references. Do not use the legacy `seed-demo.mjs` reset against the relational deployment. See [Operations](docs/OPERATIONS.md#demonstration-data) for details.
 
 References: [Grails 7 upgrading](https://grails.apache.org/docs/7.0.2/guide/upgrading.html), [Grails requirements](https://grails.apache.org/docs/7.0.2/guide/gettingStarted.html), and [PixiJS 8 Application](https://pixijs.com/8.x/guides/components/application).
 
