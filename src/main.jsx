@@ -100,7 +100,7 @@ function SeatMap({ event, availability, seats, onSelect, lang }) {
   }, [event, availability, seats, onSelect]);
   return <div className="canvas" ref={host} />;
 }
-function Ticket({ ticket, event }) {
+function Ticket({ ticket, event, lang }) {
   const [qr, setQr] = useState("");
   useEffect(() => {
     QRCode.toDataURL(ticket.token, { width: 180, margin: 1 }).then(setQr);
@@ -115,7 +115,7 @@ function Ticket({ ticket, event }) {
         </p>
         <code>{ticket.token}</code>
       </div>
-      {qr && <img src={qr} alt={`QR de entrada ${ticket.seat}`} />}
+      {qr && <img src={qr} alt={`${lang === "en" ? "Ticket QR" : "QR de entrada"} ${ticket.seat}`} />}
     </article>
   );
 }
@@ -505,7 +505,7 @@ function App() {
                             Desde <b>{money(e.price)}</b>
                           </span>
                           <button
-                            aria-label={`Ver ${e.name}`}
+                            aria-label={`${lang === "en" ? "View" : "Ver"} ${e.name}`}
                             onClick={() => open(e)}
                           >
                             ↗
@@ -548,7 +548,7 @@ function App() {
                     tus entradas o imprimilas.
                   </p>
                   {order.tickets.map((t) => (
-                    <Ticket key={t.id} ticket={t} event={event} />
+                    <Ticket key={t.id} ticket={t} event={event} lang={lang} />
                   ))}
                   <button className="primary" onClick={() => window.print()}>
                     Imprimir entradas
