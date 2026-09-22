@@ -1,14 +1,14 @@
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile, rename } from 'node:fs/promises';
 import { join } from 'node:path';
-import { checkout, demoPaymentMethods, fail, reserve, scan, seed } from './domain.js';
+import { checkout, demoPaymentMethods, fail, normalizeState, reserve, scan, seed } from './domain.js';
 
 const parseJson=value=>typeof value==='string'?JSON.parse(value):value;
 const iso=value=>value instanceof Date?value.toISOString():value;
 
 function localStore(state,save,close) {
  let queue=Promise.resolve();
- const transaction=fn=>{const task=queue.then(async()=>{const next=structuredClone(state.value);const result=await fn(next);await save(next);state.value=next;return result;});queue=task.catch(()=>{});return task;};
+ const transaction=fn=>{const task=queue.then(async()=>{const next=normalizeState(structuredClone(state.value));const result=await fn(next);await save(next);state.value=next;return result;});queue=task.catch(()=>{});return task;};
  return {transaction,reserve:body=>transaction(s=>reserve(s,body)),checkout:body=>transaction(s=>checkout(s,body)),scan:body=>transaction(s=>scan(s,body)),seats:eventId=>transaction(s=>({sold:s.tickets.filter(t=>t.eventId===eventId).map(t=>t.seat),held:s.holds.filter(h=>h.eventId===eventId&&h.expiresAt>Date.now()).flatMap(h=>h.seats)})),admin:()=>transaction(s=>({orders:s.orders,checkedIn:s.tickets.filter(t=>t.usedAt).length,tickets:s.tickets.length,integrations:s.integrations})),customers:()=>transaction(()=>[]),revealCustomer:()=>fail('Disponible únicamente con MySQL.',503),close:async()=>{await queue;await close();}};
 }
 
@@ -26,7 +26,7 @@ async function createMysqlStore(pool) {
  const secrets=mysqlSecrets();
  await pool.query('CREATE TABLE IF NOT EXISTS ticketing_state (id INT PRIMARY KEY, payload JSON NOT NULL)');
  await pool.query('INSERT IGNORE INTO ticketing_state VALUES (1, ?)',[JSON.stringify(seed())]);
- const withState=async fn=>{const c=await pool.getConnection();try{await c.beginTransaction();const [rows]=await c.query('SELECT payload FROM ticketing_state WHERE id=1 FOR UPDATE');const state=parseJson(rows[0].payload),result=await fn(state,c);await c.query('UPDATE ticketing_state SET payload=? WHERE id=1',[JSON.stringify(state)]);await c.commit();return result;}catch(error){await c.rollback();throw error;}finally{c.release();}};
+ const withState=async fn=>{const c=await pool.getConnection();try{await c.beginTransaction();const [rows]=await c.query('SELECT payload FROM ticketing_state WHERE id=1 FOR UPDATE');const state=normalizeState(parseJson(rows[0].payload)),result=await fn(state,c);await c.query('UPDATE ticketing_state SET payload=? WHERE id=1',[JSON.stringify(state)]);await c.commit();return result;}catch(error){await c.rollback();throw error;}finally{c.release();}};
  const transaction=fn=>withState(state=>fn(state));
  return {
   transaction,
@@ -61,6 +61,6 @@ async function createMysqlStore(pool) {
 
 export async function createStore() {
  if(process.env.MYSQL_URL){const {createPool}=await import('mysql2/promise');return createMysqlStore(createPool(process.env.MYSQL_URL));}
- const directory=process.env.DATA_DIR||'data',file=join(directory,'state.json'),temp=join(directory,'state.tmp');await mkdir(directory,{recursive:true});let value;try{value=JSON.parse(await readFile(file,'utf8'));}catch(e){if(e.code!=='ENOENT')throw e;value=seed();}
+ const directory=process.env.DATA_DIR||'data',file=join(directory,'state.json'),temp=join(directory,'state.tmp');await mkdir(directory,{recursive:true});let value;try{value=normalizeState(JSON.parse(await readFile(file,'utf8')));}catch(e){if(e.code!=='ENOENT')throw e;value=seed();}
  return localStore({value},async next=>{await writeFile(temp,JSON.stringify(next));await rename(temp,file);},async()=>{});
 }

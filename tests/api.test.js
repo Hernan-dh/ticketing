@@ -21,6 +21,9 @@ test('API: authorization, concurrency, issuance, single admission, and persisten
  const entry={eventId:'e1',token:order.tickets[0].token};const scans=await Promise.all([1,2].map(()=>request('/scan','POST',entry,true)));assert.deepEqual(scans.map(r=>r.status).sort(),[200,409]);
  await stop();await start();assert.equal((await request('/scan','POST',entry,true)).status,409);assert.deepEqual((await request('/events/e1/seats')).data.sold,['A1']);
  const dashboard=(await request('/admin','GET',undefined,true)).data;assert.equal(dashboard.orders.length,1);assert.equal(dashboard.checkedIn,1);
- assert.equal((await request('/brand','PUT',{name:'Mi productora',color:'#abcdef'},true)).status,200);assert.equal((await request('/events')).data.brand.name,'Mi productora');
+ const createdBrand=await request('/brands','POST',{name:'Mi productora',color:'#abcdef'},true);assert.equal(createdBrand.status,201);
+ assert.equal((await request(`/brands/${createdBrand.data.id}`,'PUT',{name:'Mi productora renovada',color:'#fedcba'},true)).status,200);
+ const catalog=(await request('/events')).data;assert.equal(catalog.brands.find(brand=>brand.id===createdBrand.data.id).name,'Mi productora renovada');
+ assert.equal((await request('/events','POST',{name:'Evento de marca',venue:'Sala',date:'2026-10-01T20:00',price:1000,rows:2,columns:2,medium:'Digital',brandId:createdBrand.data.id},true)).status,201);
  }finally{await stop();await rm(cwd,{recursive:true,force:true});}
 });

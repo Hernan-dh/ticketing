@@ -102,7 +102,7 @@ if args.preview:
     if subprocess.run([sys.executable, str(ROOT / "scripts" / "verify.py")], cwd=ROOT).returncode: raise SystemExit("Publishing cancelled: verification failed.")
     print("\nPreview: no files were staged, committed, or pushed."); raise SystemExit(0)
 if input("\nType PUBLISH to continue: ") != "PUBLISH": raise SystemExit("Publishing cancelled.")
-subprocess.run(["git", "-C", str(ROOT), "add", "--", *paths], check=True)
+subprocess.run(["git", "-C", str(ROOT), "add", "-A"], check=True)
 if subprocess.run([sys.executable, str(ROOT / "scripts" / "verify.py")], cwd=ROOT).returncode: raise SystemExit("Publishing cancelled: verification failed.")
 subprocess.run(["git", "-C", str(ROOT), "commit", "--no-verify", "-m", title, "-m", description], check=True)
 branch = git("branch", "--show-current")

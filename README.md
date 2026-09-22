@@ -107,7 +107,7 @@ npm.cmd run test:smoke
 
 ## Showcase data
 
-The full stack can be populated with six fictional events, twenty-four demo sales, and thirty-nine tickets. The seed is additive and idempotent: it preserves existing records and does not duplicate its own orders or tickets.
+The full stack can be populated with a demo brand, five fictional integrations, six fictional events, twenty-four demo sales, and thirty-nine tickets. The seed is additive and idempotent: it preserves existing records and does not duplicate its own integrations, orders, or tickets. It applies the demo brand only when the installation still uses the default `Ticketing` brand.
 
 ```powershell
 docker compose exec -T -e CONFIRM_DEMO_SEED=ticketing-demo app node scripts/seed-showcase.mjs --append

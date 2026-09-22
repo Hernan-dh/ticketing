@@ -9,12 +9,12 @@ if (!process.env.MYSQL_URL || !process.env.CONTACT_ENCRYPTION_KEY || !process.en
 }
 
 const events = [
-  {id:'demo-cerati',name:'Siempre es hoy: homenaje a Cerati',category:'Música',venue:'Movistar Arena · Buenos Aires',date:'2026-10-10T21:00',price:52000,rows:10,columns:14,medium:'Digital',accent:'lime'},
-  {id:'demo-spinetta',name:'Mañana es mejor: canciones de Spinetta',category:'Música',venue:'Teatro Gran Rex · Buenos Aires',date:'2026-10-24T20:30',price:44000,rows:8,columns:12,medium:'Papel',accent:'peach'},
-  {id:'demo-sosa',name:'Gracias a la vida: tributo a Mercedes Sosa',category:'Música',venue:'Teatro Libertador · Córdoba',date:'2026-11-07T21:00',price:38000,rows:9,columns:12,medium:'Digital',accent:'lavender'},
-  {id:'demo-charly',name:'Clics modernos: noche Charly García',category:'Música',venue:'Estadio Obras · Buenos Aires',date:'2026-11-21T22:00',price:61000,rows:12,columns:16,medium:'RFID',accent:'lime'},
-  {id:'demo-gardel',name:'Volver: gala Carlos Gardel',category:'Música',venue:'Teatro Colón · Buenos Aires',date:'2026-12-05T20:00',price:75000,rows:7,columns:10,medium:'Papel',accent:'peach'},
-  {id:'demo-paez',name:'El amor después del amor: especial Fito Páez',category:'Música',venue:'Anfiteatro Municipal · Rosario',date:'2026-12-19T21:30',price:47000,rows:10,columns:13,medium:'Digital',accent:'lavender'}
+  {id:'demo-cerati',brandId:'showcase-pulso',name:'Siempre es hoy: homenaje a Cerati',category:'Música',venue:'Movistar Arena · Buenos Aires',date:'2026-10-10T21:00',price:52000,rows:10,columns:14,medium:'Digital',accent:'lime'},
+  {id:'demo-spinetta',brandId:'showcase-pulso',name:'Mañana es mejor: canciones de Spinetta',category:'Música',venue:'Teatro Gran Rex · Buenos Aires',date:'2026-10-24T20:30',price:44000,rows:8,columns:12,medium:'Papel',accent:'peach'},
+  {id:'demo-sosa',brandId:'showcase-raiz',name:'Gracias a la vida: tributo a Mercedes Sosa',category:'Música',venue:'Teatro Libertador · Córdoba',date:'2026-11-07T21:00',price:38000,rows:9,columns:12,medium:'Digital',accent:'lavender'},
+  {id:'demo-charly',brandId:'showcase-electrica',name:'Clics modernos: noche Charly García',category:'Música',venue:'Estadio Obras · Buenos Aires',date:'2026-11-21T22:00',price:61000,rows:12,columns:16,medium:'RFID',accent:'lime'},
+  {id:'demo-gardel',brandId:'showcase-raiz',name:'Volver: gala Carlos Gardel',category:'Música',venue:'Teatro Colón · Buenos Aires',date:'2026-12-05T20:00',price:75000,rows:7,columns:10,medium:'Papel',accent:'peach'},
+  {id:'demo-paez',brandId:'showcase-electrica',name:'El amor después del amor: especial Fito Páez',category:'Música',venue:'Anfiteatro Municipal · Rosario',date:'2026-12-19T21:30',price:47000,rows:10,columns:13,medium:'Digital',accent:'lavender'}
 ];
 const sales = [
   ['demo-cerati','Web','card',['A1','A2'],true],['demo-cerati','Móvil','wallet',['B3'],true],
@@ -31,6 +31,18 @@ const sales = [
   ['demo-gardel','Boletería','cash',['C1'],false],['demo-paez','Web','card',['D1','D2'],false]
 ];
 const fictionalNames=['Valentina Robles','Mateo Ferrer','Camila Benítez','Julián Acosta','Sofía Pereyra','Tomás Quiroga','Martina Lagos','Bruno Méndez','Lara Villalba','Nicolás Soria','Emilia Funes','Franco Leiva','Renata Molina','Simón Cabrera','Abril Navarro','Benjamín Paz','Catalina Roldán','Dante Silva','Emma Torres','Felipe Varela','Guadalupe Arias','Joaquín Bustos','Malena Costa','Ramiro Duarte'];
+const showcaseBrands=[
+  {id:'showcase-pulso',name:'Pulso Producciones',color:'#d7fa76'},
+  {id:'showcase-raiz',name:'Raíz Escena',color:'#f2a97f'},
+  {id:'showcase-electrica',name:'Eléctrica Live',color:'#b9adf5'}
+];
+const showcaseIntegrations=[
+  {id:'showcase-payment',provider:'DemoPay Sandbox',type:'Pago',status:'Entorno de demostración'},
+  {id:'showcase-email',provider:'Correo Demo',type:'Correo',status:'Pendiente de conexión'},
+  {id:'showcase-delivery',provider:'Entrega QR Demo',type:'Entrega',status:'Pendiente de conexión'},
+  {id:'showcase-benefits',provider:'Club Demo',type:'Beneficios',status:'Pendiente de conexión'},
+  {id:'showcase-sales',provider:'Canal Asociado Demo',type:'Sitio de venta',status:'Pendiente de conexión'}
+];
 
 const stableId=(namespace,value)=>{const hash=createHash('sha256').update(`${namespace}:${value}`).digest('hex');return `${hash.slice(0,8)}-${hash.slice(8,12)}-4${hash.slice(13,16)}-8${hash.slice(17,20)}-${hash.slice(20,32)}`;};
 const contactKey=createHash('sha256').update(process.env.CONTACT_ENCRYPTION_KEY).digest();
@@ -42,6 +54,11 @@ try {
   await connection.beginTransaction();
   const [stateRows]=await connection.query('SELECT payload FROM ticketing_state WHERE id=1 FOR UPDATE');
   const state=typeof stateRows[0].payload==='string'?JSON.parse(stateRows[0].payload):stateRows[0].payload;
+  if(!Array.isArray(state.brands)||!state.brands.length){const legacy=state.brand||{name:'Ticketing',color:'#d7fa76'};state.brands=[{id:'brand-ticketing',name:legacy.name,color:legacy.color}];delete state.brand;}
+  for (const brand of showcaseBrands) {const current=state.brands.find(item=>item.id===brand.id);if(current)Object.assign(current,brand);else state.brands.push(brand);}
+  const fallbackBrandId=state.brands[0].id;for(const event of state.events)if(!event.brandId)event.brandId=fallbackBrandId;
+  state.integrations=Array.isArray(state.integrations)?state.integrations:[];
+  for (const integration of showcaseIntegrations) {const current=state.integrations.find(item=>item.id===integration.id);if(current)Object.assign(current,integration);else state.integrations.push(integration);}
   for (const event of events) {
     await connection.query('INSERT INTO catalog_events (id,payload) VALUES (?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload)',[event.id,JSON.stringify(event)]);
     const current=state.events.find(item=>item.id===event.id);if(current)Object.assign(current,event);else state.events.push(event);
@@ -62,5 +79,5 @@ try {
   }
   await connection.query('UPDATE ticketing_state SET payload=? WHERE id=1',[JSON.stringify(state)]);
   await connection.commit();
-  console.log(`Showcase data ready: ${events.length} events and ${sales.length} idempotent demo sales.`);
+  console.log(`Showcase data ready: ${showcaseBrands.length} brands, ${events.length} events, ${sales.length} idempotent demo sales and ${showcaseIntegrations.length} integrations.`);
 } catch(error) {await connection.rollback();throw error;} finally {connection.release();await pool.end();}

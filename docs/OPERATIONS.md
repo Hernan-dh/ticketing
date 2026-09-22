@@ -112,7 +112,7 @@ sudo docker compose exec -T mysql sh -c 'exec mysql -N -uticketing -p"$MYSQL_PAS
 
 ### Additive showcase seed
 
-`scripts/seed-showcase.mjs` idempotently adds six fictional events, twenty-four normalized demo sales and thirty-nine tickets. It preserves existing data, encrypts distinct `example.test` contacts and fictional names, uses opaque aliases and stores only simulated payment references.
+`scripts/seed-showcase.mjs` idempotently adds a demo brand, five fictional integration intents, six fictional events, twenty-four normalized demo sales and thirty-nine tickets. It preserves existing data, encrypts distinct `example.test` contacts and fictional names, uses opaque aliases and stores only simulated payment references. The demo brand is applied only while the installation still uses the default `Ticketing` name; an existing custom brand is never replaced. Seeded integrations use stable IDs, so reruns update them without duplicating them or removing user-created integrations.
 
 ```bash
 sudo docker compose exec -T -e CONFIRM_DEMO_SEED=ticketing-demo app node scripts/seed-showcase.mjs --append

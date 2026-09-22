@@ -123,7 +123,10 @@ function App() {
   const [lang, setLang] = useState(localStorage.getItem("language") || "es"),
     [page, setPage] = useState("Eventos"),
     [events, setEvents] = useState([]),
-    [brand, setBrand] = useState({ name: "Ticketing", color: "#d7fa76" }),
+    [brands, setBrands] = useState([
+      { id: "brand-ticketing", name: "Ticketing", color: "#d7fa76" },
+    ]),
+    [selectedBrandId, setSelectedBrandId] = useState(""),
     [query, setQuery] = useState(""),
     [event, setEvent] = useState(null),
     [seats, setSeats] = useState([]),
@@ -171,7 +174,7 @@ function App() {
   const refresh = async () => {
     const d = await api("/events");
     setEvents(d.events);
-    setBrand(d.brand);
+    setBrands(d.brands);
   };
   useEffect(() => {
     run(refresh);
@@ -247,8 +250,17 @@ function App() {
     : event
       ? seats.length * event.price
       : 0;
+  const activeBrand =
+    brands.find((brand) => brand.id === (event?.brandId || selectedBrandId)) ||
+    brands[0] ||
+    { name: "Ticketing", color: "#d7fa76" };
+  const visibleEvents = events.filter(
+    (item) =>
+      (!selectedBrandId || item.brandId === selectedBrandId) &&
+      `${item.name} ${item.venue}`.toLowerCase().includes(query.toLowerCase()),
+  );
   return (
-    <div className="shell" style={{ "--accent": brand.color }}>
+    <div className="shell" style={{ "--accent": activeBrand.color }}>
       <aside>
         <a
           className="logo"
@@ -259,13 +271,13 @@ function App() {
           }}
         >
           <span className="logo-icon">c</span>
-          {brand.name.toLowerCase()}
+          {activeBrand.name.toLowerCase()}
           <sup>®</sup>
         </a>
         <div className="workspace">
           <span className="avatar">C</span>
           <div>
-            {brand.name} Ticketing<small>Tu espacio de trabajo</small>
+            {activeBrand.name}<small>Tu espacio de trabajo</small>
           </div>
           <span>⌄</span>
         </div>
@@ -277,7 +289,7 @@ function App() {
             ["Clientes", "◎"],
             ["Control de acceso", "⌘"],
             ["Integraciones", "⊞"],
-            ["Mi marca", "◈"],
+            ["Marcas", "◈"],
           ].map(([p, i]) => (
             <button
               className={page === p ? "active" : ""}
@@ -437,25 +449,31 @@ function App() {
               <div className="list-heading" id="event-list">
                 <div>
                   <h2>
-                    Próximas experiencias <span>{events.length}</span>
+                    Próximas experiencias <span>{visibleEvents.length}</span>
                   </h2>
                   <p>Todo listo para tu próximo gran evento.</p>
                 </div>
-                <input
-                  aria-label="Buscar eventos"
-                  placeholder="⌕  Buscar evento o lugar…"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
+                <div className="catalog-filters">
+                  <select
+                    aria-label="Filtrar por marca"
+                    value={selectedBrandId}
+                    onChange={(e) => setSelectedBrandId(e.target.value)}
+                  >
+                    <option value="">Todas las marcas</option>
+                    {brands.map((brand) => (
+                      <option value={brand.id} key={brand.id}>{brand.name}</option>
+                    ))}
+                  </select>
+                  <input
+                    aria-label="Buscar eventos"
+                    placeholder="⌕  Buscar evento o lugar…"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                </div>
               </div>
               <div className="event-grid">
-                {events
-                  .filter((e) =>
-                    `${e.name} ${e.venue}`
-                      .toLowerCase()
-                      .includes(query.toLowerCase()),
-                  )
-                  .map((e, i) => (
+                {visibleEvents.map((e, i) => (
                     <article className="event-card" key={e.id}>
                       <button
                         className={`poster ${e.accent}`}
@@ -469,6 +487,9 @@ function App() {
                         <small>LIVE EXPERIENCES / 2026</small>
                       </button>
                       <div className="event-info">
+                        <small className="brand-label">
+                          {brands.find((brand) => brand.id === e.brandId)?.name || "Ticketing"}
+                        </small>
                         <span className="event-date">
                           {new Date(e.date).toLocaleDateString(locale(lang), {
                             day: "numeric",
@@ -494,11 +515,7 @@ function App() {
                     </article>
                   ))}
               </div>
-              {events.filter((e) =>
-                `${e.name} ${e.venue}`
-                  .toLowerCase()
-                  .includes(query.toLowerCase()),
-              ).length === 0 && <p>No encontramos eventos con esa búsqueda.</p>}
+              {visibleEvents.length === 0 && <p>No encontramos eventos con esa búsqueda.</p>}
               <footer>
                 <span>Hecho para crear experiencias extraordinarias.</span>
                 <span>Ticketing ↗</span>
@@ -767,6 +784,14 @@ function App() {
                     <input required name="date" type="datetime-local" />
                   </label>
                   <label>
+                    Marca
+                    <select name="brandId" required defaultValue={brands[0]?.id}>
+                      {brands.map((brand) => (
+                        <option value={brand.id} key={brand.id}>{brand.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
                     Precio ARS
                     <input
                       required
@@ -948,37 +973,52 @@ function App() {
                   </small>
                 </form>
               )}
-              {page === "Mi marca" && (
-                <form
-                  className="panel form-grid"
-                  key={brand.name + brand.color}
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const d = Object.fromEntries(new FormData(e.currentTarget));
-                    run(async () => setBrand(await api("/brand", "PUT", d)));
-                  }}
-                >
-                  <label>
-                    Nombre de tu marca
-                    <input
-                      required
-                      name="name"
-                      defaultValue={brand.name}
-                      maxLength="60"
-                    />
-                  </label>
-                  <label>
-                    Color principal
-                    <input
-                      name="color"
-                      type="color"
-                      defaultValue={brand.color}
-                    />
-                  </label>
-                  <button className="primary" disabled={busy}>
-                    Guardar identidad
-                  </button>
-                </form>
+              {page === "Marcas" && (
+                <section className="brand-manager">
+                  <form
+                    className="panel form-grid"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const form=e.currentTarget,d=Object.fromEntries(new FormData(form));
+                      run(async () => {await api("/brands", "POST", d);form.reset();await refresh();});
+                    }}
+                  >
+                    <h2>Nueva marca</h2>
+                    <span />
+                    <label>
+                      Nombre de la marca
+                      <input required name="name" maxLength="60" />
+                    </label>
+                    <label>
+                      Color principal
+                      <input name="color" type="color" defaultValue="#d7fa76" />
+                    </label>
+                    <button className="primary" disabled={busy}>Agregar marca</button>
+                  </form>
+                  <div className="brand-grid">
+                    {brands.map((brand) => (
+                      <form
+                        className="panel form-grid"
+                        key={`${brand.id}-${brand.name}-${brand.color}`}
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          const d=Object.fromEntries(new FormData(e.currentTarget));
+                          run(async () => {await api(`/brands/${brand.id}`, "PUT", d);await refresh();});
+                        }}
+                      >
+                        <label>
+                          Nombre de la marca
+                          <input required name="name" defaultValue={brand.name} maxLength="60" />
+                        </label>
+                        <label>
+                          Color principal
+                          <input name="color" type="color" defaultValue={brand.color} />
+                        </label>
+                        <button disabled={busy}>Guardar identidad</button>
+                      </form>
+                    ))}
+                  </div>
+                </section>
               )}
               {page === "Integraciones" && (
                 <section className="panel">

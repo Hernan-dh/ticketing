@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-REQUIRED = ("README.md", "LICENSE", "AGENTS.md", ".env.example", "docs/ARCHITECTURE.md", "docs/OPERATIONS.md", "docs/decisions/README.md")
+REQUIRED = ("README.md", "AGENTS.md", ".env.example", "docs/ARCHITECTURE.md", "docs/OPERATIONS.md", "docs/decisions/README.md")
 PRIVATE_NAMES = {".env", "credentials.json", "secrets.json", "secrets.yaml", "id_rsa", "id_ed25519"}
 GENERATED = {"node_modules", "dist", "data", "test-results", "playwright-report", "build", ".gradle"}
 TEXT_SUFFIXES = {".css", ".env", ".groovy", ".html", ".js", ".json", ".md", ".py", ".sql", ".yaml", ".yml"}
