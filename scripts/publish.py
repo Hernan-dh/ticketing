@@ -6,7 +6,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 TITLE = re.compile(r"^(feat|fix|docs|style|refactor|perf|test|build|ci|chore)(\([^)]+\))?!?: .+")
-DEFAULT_GEMINI_MODELS = ("gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite")
+DEFAULT_GEMINI_MODELS = ("gemini-3.5-flash", "gemini-3.7-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite")
 GEMINI_THINKING_LEVELS = {"gemini-3.8-flash": "low", "gemini-3.7-flash": "low", "gemini-3.6-flash": "low", "gemini-3.5-flash": "minimal", "gemini-3.5-flash-lite": "minimal", "gemini-3.1-flash-lite": "low"}
 DEFAULT_REQUEST_TIMEOUT = 15
 MAX_CHANGE_CONTEXT = 24_000
@@ -69,7 +69,9 @@ def gemini(text: str, model: str, key: str) -> tuple[str, str]:
     parts = data["candidates"][0]["content"]["parts"]
     return parse_proposal("".join(part.get("text", "") for part in parts if isinstance(part, dict)))
 def openai_compatible(text: str, key: str, model: str, base: str) -> tuple[str, str]:
-    data = request_json(f"{base}/chat/completions", {"Authorization": f"Bearer {key}"}, {"model": model, "messages": [{"role": "user", "content": text}], "temperature": 0.4, "max_completion_tokens": 1000, "reasoning_effort": "low", "response_format": {"type": "json_object"}})
+    payload = {"model": model, "messages": [{"role": "user", "content": text}], "temperature": 0.4, "max_completion_tokens": 1000}
+    if "openrouter.ai" not in base: payload.update({"reasoning_effort": "low", "response_format": {"type": "json_object"}})
+    data = request_json(f"{base}/chat/completions", {"Authorization": f"Bearer {key}"}, payload)
     return parse_proposal(data["choices"][0]["message"]["content"])
 def proposal(paths: list[str]) -> tuple[str, str]:
     load_env(); text = prompt(paths); failures: list[str] = []; key = os.getenv("GEMINI_API_KEY", "").strip()
@@ -78,16 +80,16 @@ def proposal(paths: list[str]) -> tuple[str, str]:
         for model in models:
             try: print(f"[proposal] trying Gemini/{model}", flush=True); return gemini(text, model, key)
             except (KeyError, IndexError, TypeError, ValueError, RuntimeError) as error: failures.append(f"Gemini/{model}: {error}")
-    groq_key = os.getenv("GROQ_API_KEY", "").strip()
-    if groq_key:
-        try: print("[proposal] trying Groq", flush=True); return openai_compatible(text, groq_key, os.getenv("GROQ_COMMIT_MODEL", os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")), os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/"))
-        except (KeyError, IndexError, TypeError, ValueError, RuntimeError) as error: failures.append(f"Groq: {error}")
     openrouter_key = os.getenv("OPENROUTER_API_KEY", "").strip()
     if openrouter_key:
         try:
             print("[proposal] trying OpenRouter", flush=True)
-            return openai_compatible(text, openrouter_key, os.getenv("OPENROUTER_COMMIT_MODEL", os.getenv("OPENROUTER_MODEL", "openai/gpt-oss-120b")), os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/"))
+            return openai_compatible(text, openrouter_key, os.getenv("OPENROUTER_COMMIT_MODEL", os.getenv("OPENROUTER_MODEL", "nvidia/nemotron-3.5-lightning:free")), os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/"))
         except (KeyError, IndexError, TypeError, ValueError, RuntimeError) as error: failures.append(f"OpenRouter: {error}")
+    groq_key = os.getenv("GROQ_API_KEY", "").strip()
+    if groq_key:
+        try: print("[proposal] trying Groq", flush=True); return openai_compatible(text, groq_key, os.getenv("GROQ_COMMIT_MODEL", os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")), os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/"))
+        except (KeyError, IndexError, TypeError, ValueError, RuntimeError) as error: failures.append(f"Groq: {error}")
     if not key and not groq_key and not openrouter_key:
         raise SystemExit("No commit-generation API key is configured. Set GEMINI_API_KEY, GROQ_API_KEY or OPENROUTER_API_KEY, or provide both --title and --description.")
     raise SystemExit("Could not generate the commit proposal:\n- " + "\n- ".join(failures) + "\nNo files were staged; retry or provide both --title and --description.")
