@@ -120,7 +120,14 @@ function Ticket({ ticket, event, lang }) {
   );
 }
 function App() {
-  const [lang, setLang] = useState(localStorage.getItem("language") || "es"),
+  const [lang, setLang] = useState(() => {
+    const saved = localStorage.getItem("language");
+    return saved === "es" || saved === "en"
+      ? saved
+      : (navigator.language || "").toLowerCase().startsWith("es")
+        ? "es"
+        : "en";
+  }),
     [page, setPage] = useState("Eventos"),
     [events, setEvents] = useState([]),
     [brands, setBrands] = useState([
