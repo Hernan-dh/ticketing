@@ -157,6 +157,10 @@ An HTTP `500` requires application-log inspection; clients intentionally receive
 
 ## Commit publication
 
+Gemini commit metadata rotates through `GEMINI_API_KEY`, `GEMINI_API_KEY_2`,
+`GEMINI_API_KEY_3`, and `GEMINI_API_KEY_4` before the existing OpenRouter and
+Groq fallbacks.
+
 ```powershell
 npm.cmd run publish:preview -- --title "docs: update technical reference" --description "Keep architecture and operations aligned with the deployed system."
 npm.cmd run publish -- --title "docs: update technical reference" --description "Keep architecture and operations aligned with the deployed system."

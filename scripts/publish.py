@@ -74,12 +74,14 @@ def openai_compatible(text: str, key: str, model: str, base: str) -> tuple[str, 
     data = request_json(f"{base}/chat/completions", {"Authorization": f"Bearer {key}"}, payload)
     return parse_proposal(data["choices"][0]["message"]["content"])
 def proposal(paths: list[str]) -> tuple[str, str]:
-    load_env(); text = prompt(paths); failures: list[str] = []; key = os.getenv("GEMINI_API_KEY", "").strip()
+    load_env(); text = prompt(paths); failures: list[str] = []
+    keys = tuple(dict.fromkeys(key for name in ("GEMINI_API_KEY", "GEMINI_API_KEY_2", "GEMINI_API_KEY_3", "GEMINI_API_KEY_4") if (key := os.getenv(name, "").strip())))
     configured = os.getenv("GEMINI_COMMIT_MODELS", os.getenv("GEMINI_COMMIT_MODEL", "")); models = tuple(model.strip() for model in configured.split(",") if model.strip()) or DEFAULT_GEMINI_MODELS
-    if key:
+    for key_index, key in enumerate(keys, start=1):
         for model in models:
-            try: print(f"[proposal] trying Gemini/{model}", flush=True); return gemini(text, model, key)
-            except (KeyError, IndexError, TypeError, ValueError, RuntimeError) as error: failures.append(f"Gemini/{model}: {error}")
+            label = f"Gemini/{model}" if key_index == 1 else f"Gemini key {key_index}/{model}"
+            try: print(f"[proposal] trying {label}", flush=True); return gemini(text, model, key)
+            except (KeyError, IndexError, TypeError, ValueError, RuntimeError) as error: failures.append(f"{label}: {error}")
     openrouter_key = os.getenv("OPENROUTER_API_KEY", "").strip()
     if openrouter_key:
         try:
@@ -90,7 +92,7 @@ def proposal(paths: list[str]) -> tuple[str, str]:
     if groq_key:
         try: print("[proposal] trying Groq", flush=True); return openai_compatible(text, groq_key, os.getenv("GROQ_COMMIT_MODEL", os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")), os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/"))
         except (KeyError, IndexError, TypeError, ValueError, RuntimeError) as error: failures.append(f"Groq: {error}")
-    if not key and not groq_key and not openrouter_key:
+    if not keys and not groq_key and not openrouter_key:
         raise SystemExit("No commit-generation API key is configured. Set GEMINI_API_KEY, GROQ_API_KEY or OPENROUTER_API_KEY, or provide both --title and --description.")
     raise SystemExit("Could not generate the commit proposal:\n- " + "\n- ".join(failures) + "\nNo files were staged; retry or provide both --title and --description.")
 parser = argparse.ArgumentParser(description=__doc__); parser.add_argument("--preview", action="store_true"); parser.add_argument("--title"); parser.add_argument("--description"); args = parser.parse_args()
