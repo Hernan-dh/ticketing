@@ -6,6 +6,7 @@ import QRCode from "qrcode";
 import "./style.css";
 import { localize, locale } from "./i18n.js";
 const selection = new Backbone.Model({ seats: [] });
+const apiBase = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
 const money = (n) =>
   new Intl.NumberFormat(locale(document.documentElement.lang), {
     style: "currency",
@@ -22,7 +23,7 @@ const paymentName = (type, lang) => {
   return names[type]?.[lang === "en" ? 1 : 0] || type;
 };
 async function api(path, method = "GET", body) {
-  const r = await fetch(`/api${path}`, {
+  const r = await fetch(`${apiBase}${path}`, {
     method,
     headers: {
       "Content-Type": "application/json",

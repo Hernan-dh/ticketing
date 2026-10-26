@@ -4,6 +4,8 @@ COPY package*.json ./
 RUN npm ci
 COPY index.html vite.config.js ./
 COPY src ./src
+ARG VITE_APP_BASE_PATH=/
+ENV VITE_APP_BASE_PATH=$VITE_APP_BASE_PATH
 RUN npm run build
 RUN npm prune --omit=dev
 FROM node:24-alpine

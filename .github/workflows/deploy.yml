@@ -1,0 +1,34 @@
+name: Deploy Ticketing
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-ticketing
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure deployment SSH
+        env:
+          NETCUP_KNOWN_HOSTS: ${{ secrets.NETCUP_KNOWN_HOSTS }}
+          NETCUP_SSH_KEY: ${{ secrets.NETCUP_SSH_KEY }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$NETCUP_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$NETCUP_KNOWN_HOSTS" > ~/.ssh/known_hosts
+      - name: Sync source and rebuild Ticketing without changing data volumes
+        env:
+          NETCUP_HOST: ${{ secrets.NETCUP_HOST }}
+          NETCUP_USER: ${{ secrets.NETCUP_USER }}
+        run: |
+          rsync -az --exclude '.env' --exclude '.git' --exclude 'node_modules' --exclude 'dist' --exclude 'data' ./ "$NETCUP_USER@$NETCUP_HOST:/srv/portfolio-demos/ticketing/"
+          ssh -o StrictHostKeyChecking=yes "$NETCUP_USER@$NETCUP_HOST" 'cd /srv/portfolio-demos/ticketing && sudo -n docker compose up -d --build'
