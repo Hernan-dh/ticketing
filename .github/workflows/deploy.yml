@@ -30,5 +30,5 @@ jobs:
           NETCUP_HOST: ${{ secrets.NETCUP_HOST }}
           NETCUP_USER: ${{ secrets.NETCUP_USER }}
         run: |
-          rsync -az --exclude '.env' --exclude '.git' --exclude 'node_modules' --exclude 'dist' --exclude 'data' ./ "$NETCUP_USER@$NETCUP_HOST:/srv/projects/ticketing/"
+          rsync -az --no-g --exclude '.env' --exclude '.git' --exclude 'node_modules' --exclude 'dist' --exclude 'data' ./ "$NETCUP_USER@$NETCUP_HOST:/srv/projects/ticketing/"
           ssh -o StrictHostKeyChecking=yes "$NETCUP_USER@$NETCUP_HOST" 'cd /srv/projects/ticketing && sudo -n docker compose up -d --build'
