@@ -35,10 +35,7 @@ services:
     depends_on:
       mysql: {condition: service_healthy}
   app:
-    build:
-      context: .
-      args:
-        VITE_APP_BASE_PATH: /ticketing/
+    build: .
     ports: ['127.0.0.1:${APP_PORT:-3001}:3001']
     environment:
       HOST: 0.0.0.0

@@ -47,8 +47,8 @@ Pushes to `main` run the GitHub Actions deployment workflow. It synchronizes
 source to `/srv/projects/ticketing`, preserves the server `.env` and
 named MySQL/Redis volumes, and runs `docker compose up -d --build`. Configure
 `NETCUP_HOST`, `NETCUP_USER`, `NETCUP_SSH_KEY`, and `NETCUP_KNOWN_HOSTS` as
-repository secrets. The public mount is `/ticketing`; its compiled assets and
-API calls retain that prefix.
+repository secrets. The application continues to use its dedicated public
+hostname, with assets and API calls served from that hostname root.
 
 ```bash
 cd /srv/projects/ticketing
